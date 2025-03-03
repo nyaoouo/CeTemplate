@@ -68,7 +68,15 @@ function aobScanModule(name, m, aob)
   return res
 end
 
+function ensure_monopipe()
+  if monopipe then return monopipe end
+  LaunchMonoDataCollector()
+  if monopipe then return monopipe end
+  error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+end
+
 function findMonoFunction(namespace, cls, method, sign)
+  ensure_monopipe()
   local methods = mono_class_enumMethods(mono_findClass(namespace,cls))
   for i = 1,#methods do
     if methods[i].name == method then
@@ -112,12 +120,6 @@ end
 local function main()
 	addCompactMenu()
 	autoAttach('ProcessName.exe')
-
-    if not monopipe then -- unity game
-      if LaunchMonoDataCollector() == 0 then
-        error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
-      end
-    end
 end
 
 main()
