@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>1</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+function findMonoFunctionWithSign(namespace, cls, method, sign)
+  local methods = mono_class_enumMethods(mono_findClass(namespace,cls))
+  for i = 1,#methods do
+    if methods[i].name == method then
+      if mono_method_getSignature(methods[i].method) == sign then
+        return mono_compile_method(methods[i].method)
+      end
+    end
+  end
+  error(("cannot find method %s:%s:%s with sign "):format(namespace,cls,method,sign))
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('Card-en-Ciel.exe')
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"can upgrade"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+
+aobscanmodule(check_can_buy,Card-en-Ciel.exe,76 ? 33 ? 48 ? ? e8 ? ? ? ? e9 ? ? ? ?) // should be unique
+
+check_can_buy:
+  db eb
+registersymbol(check_can_buy)
+
+[DISABLE]
+
+check_can_buy:
+  db 76
+unregistersymbol(check_can_buy)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Card-en-Ciel.exe.text+7A320
+
+Card-en-Ciel.exe.text+7A2FB: 48 8D 4C 24 30        - lea rcx,[rsp+30]
+Card-en-Ciel.exe.text+7A300: E8 4B D8 F9 FF        - call Card-en-Ciel.exe.text+17B50
+Card-en-Ciel.exe.text+7A305: 90                    - nop 
+Card-en-Ciel.exe.text+7A306: 48 85 DB              - test rbx,rbx
+Card-en-Ciel.exe.text+7A309: 74 26                 - je Card-en-Ciel.exe.text+7A331
+Card-en-Ciel.exe.text+7A30B: 8B 8B 48 03 00 00     - mov ecx,[rbx+00000348]
+Card-en-Ciel.exe.text+7A311: 48 8B 87 60 06 00 00  - mov rax,[rdi+00000660]
+Card-en-Ciel.exe.text+7A318: 48 85 C0              - test rax,rax
+Card-en-Ciel.exe.text+7A31B: 74 14                 - je Card-en-Ciel.exe.text+7A331
+Card-en-Ciel.exe.text+7A31D: 39 48 2C              - cmp [rax+2C],ecx
+// ---------- INJECTING HERE ----------
+Card-en-Ciel.exe.text+7A320: 76 0F                 - jna Card-en-Ciel.exe.text+7A331
+// ---------- DONE INJECTING  ----------
+Card-en-Ciel.exe.text+7A322: 33 D2                 - xor edx,edx
+Card-en-Ciel.exe.text+7A324: 48 8B 0E              - mov rcx,[rsi]
+Card-en-Ciel.exe.text+7A327: E8 94 0D 00 00        - call Card-en-Ciel.exe.text+7B0C0
+Card-en-Ciel.exe.text+7A32C: E9 12 06 00 00        - jmp Card-en-Ciel.exe.text+7A943
+Card-en-Ciel.exe.text+7A331: 48 8B 06              - mov rax,[rsi]
+Card-en-Ciel.exe.text+7A334: 44 8B B8 94 06 00 00  - mov r15d,[rax+00000694]
+Card-en-Ciel.exe.text+7A33B: 44 8B A7 50 06 00 00  - mov r12d,[rdi+00000650]
+Card-en-Ciel.exe.text+7A342: 41 B0 01              - mov r8b,01
+Card-en-Ciel.exe.text+7A345: BA 1C 7B 2C 3F        - mov edx,3F2C7B1C
+Card-en-Ciel.exe.text+7A34A: 48 8B 8F F8 04 00 00  - mov rcx,[rdi+000004F8]
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>3</ID>
+          <Description>"no damage"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+
+aobscanmodule(no_damage,Card-en-Ciel.exe,74 ? 41 ? ? 44 89 7d ?) // should be unique
+
+no_damage:
+  nop 2
+registersymbol(no_damage)
+
+[DISABLE]
+
+no_damage:
+  db 74 0A
+unregistersymbol(no_damage)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>4</ID>
+          <Description>"no cost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Card-en-Ciel.exe
+  Version: 
+  Date   : 2024-10-27
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+
+aobscanmodule(cost_at,Card-en-Ciel.exe,40 ? 55 56 48 ? ? ? 44 ? ? ? ? ? ? ) // should be unique
+alloc(newmem,$1000,cost_at)
+
+label(code)
+label(return)
+label(cost_at__normal)
+
+newmem:
+code:
+  cmp edx, 0
+  jnge cost_at__normal
+  xor edx, edx
+cost_at__normal:
+  readmem(cost_at,8)
+  jmp return
+
+cost_at:
+  jmp code
+  nop 3
+return:
+registersymbol(cost_at,cost_at__normal)
+
+[DISABLE]
+
+cost_at:
+  readmem(cost_at__normal,8)
+
+unregistersymbol(cost_at,cost_at__normal)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Card-en-Ciel.exe.text+11FB40
+
+Card-en-Ciel.exe.text+11FB36: CC                       - int 3 
+Card-en-Ciel.exe.text+11FB37: CC                       - int 3 
+Card-en-Ciel.exe.text+11FB38: CC                       - int 3 
+Card-en-Ciel.exe.text+11FB39: CC                       - int 3 
+Card-en-Ciel.exe.text+11FB3A: CC                       - int 3 
+Card-en-Ciel.exe.text+11FB3B: CC                       - int 3 
+Card-en-Ciel.exe.text+11FB3C: CC                       - int 3 
+Card-en-Ciel.exe.text+11FB3D: CC                       - int 3 
+Card-en-Ciel.exe.text+11FB3E: CC                       - int 3 
+Card-en-Ciel.exe.text+11FB3F: CC                       - int 3 
+// ---------- INJECTING HERE ----------
+Card-en-Ciel.exe.text+11FB40: 40 53                    - push rbx
+// ---------- DONE INJECTING  ----------
+Card-en-Ciel.exe.text+11FB42: 55                       - push rbp
+Card-en-Ciel.exe.text+11FB43: 56                       - push rsi
+Card-en-Ciel.exe.text+11FB44: 48 83 EC 30              - sub rsp,30
+Card-en-Ciel.exe.text+11FB48: 44 8B 89 00 0C 00 00     - mov r9d,[rcx+00000C00]
+Card-en-Ciel.exe.text+11FB4F: 48 8D 44 24 58           - lea rax,[rsp+58]
+Card-en-Ciel.exe.text+11FB54: 44 2B CA                 - sub r9d,edx
+Card-en-Ciel.exe.text+11FB57: C7 44 24 58 00 00 00 00  - mov [rsp+58],00000000
+Card-en-Ciel.exe.text+11FB5F: 48 8B D9                 - mov rbx,rcx
+Card-en-Ciel.exe.text+11FB62: 44 89 4C 24 50           - mov [rsp+50],r9d
+Card-en-Ciel.exe.text+11FB67: 48 8D 4C 24 50           - lea rcx,[rsp+50]
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5</ID>
+          <Description>"more reroll"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Card-en-Ciel.exe
+  Version: 
+  Date   : 2024-10-27
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(dec_reroll_,Card-en-Ciel.exe,b2 ? 48 ? ? e8 ? ? ? ? 48 ? ? ? ? ? ? 48 ? ? 74 ? ff ?) // should be unique
+define(dec_reroll,dec_reroll_+16)
+alloc(newmem,$1000,dec_reroll)
+
+newmem:
+  readmem(dec_reroll,2)
+
+dec_reroll:
+  nop 2
+
+registersymbol(dec_reroll)
+
+[DISABLE]
+
+dec_reroll:
+  readmem(newmem,2)
+
+unregistersymbol(dec_reroll)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Card-en-Ciel.exe.text+27DE5A
+
+Card-en-Ciel.exe.text+27DE33: E8 F8 60 7D 00           - call Card-en-Ciel.exe.text+A53F30
+Card-en-Ciel.exe.text+27DE38: 48 85 C0                 - test rax,rax
+Card-en-Ciel.exe.text+27DE3B: 74 07                    - je Card-en-Ciel.exe.text+27DE44
+Card-en-Ciel.exe.text+27DE3D: C6 80 98 01 00 00 00     - mov byte ptr [rax+00000198],00
+Card-en-Ciel.exe.text+27DE44: B2 01                    - mov dl,01
+Card-en-Ciel.exe.text+27DE46: 48 8B CB                 - mov rcx,rbx
+Card-en-Ciel.exe.text+27DE49: E8 E2 33 00 00           - call Card-en-Ciel.exe.text+281230
+Card-en-Ciel.exe.text+27DE4E: 48 8B 83 68 06 00 00     - mov rax,[rbx+00000668]
+Card-en-Ciel.exe.text+27DE55: 48 85 C0                 - test rax,rax
+Card-en-Ciel.exe.text+27DE58: 74 02                    - je Card-en-Ciel.exe.text+27DE5C
+// ---------- INJECTING HERE ----------
+Card-en-Ciel.exe.text+27DE5A: FF 08                    - dec [rax]
+// ---------- DONE INJECTING  ----------
+Card-en-Ciel.exe.text+27DE5C: 0F 57 C0                 - xorps xmm0,xmm0
+Card-en-Ciel.exe.text+27DE5F: 0F 11 44 24 30           - movups [rsp+30],xmm0
+Card-en-Ciel.exe.text+27DE64: 66 0F 6F 0D 04 4C E7 00  - movdqa xmm1,[Card-en-Ciel.exe.rdata+31FA70]
+Card-en-Ciel.exe.text+27DE6C: 66 0F 7F 4C 24 40        - movdqa [rsp+40],xmm1
+Card-en-Ciel.exe.text+27DE72: C6 44 24 30 00           - mov byte ptr [rsp+30],00
+Card-en-Ciel.exe.text+27DE77: 41 B8 04 00 00 00        - mov r8d,00000004
+Card-en-Ciel.exe.text+27DE7D: 48 8D 15 24 C4 DF 00     - lea rdx,[Card-en-Ciel.exe.rdata+2A72A8]
+Card-en-Ciel.exe.text+27DE84: 48 8D 4C 24 30           - lea rcx,[rsp+30]
+Card-en-Ciel.exe.text+27DE89: E8 52 B6 D9 FF           - call Card-en-Ciel.exe.text+194E0
+Card-en-Ciel.exe.text+27DE8E: C7 44 24 54 01 00 00 00  - mov [rsp+54],00000001
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6</ID>
+          <Description>"one hit break shield"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Card-en-Ciel.exe
+  Version: 
+  Date   : 2024-10-27
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+
+aobscanmodule(shield_dmg_at,Card-en-Ciel.exe,44 89 44 24 ? 89 54 24 ? 55 53) // should be unique
+alloc(newmem,$1000,shield_dmg_at)
+
+label(code)
+label(return)
+label(shield_dmg_at__normal)
+
+newmem:
+code:
+  cmp edx, [rcx+A38]
+  cmovl edx, [rcx+A38]
+shield_dmg_at__normal:
+  readmem(shield_dmg_at,5)
+  jmp return
+
+shield_dmg_at:
+  jmp code
+return:
+registersymbol(shield_dmg_at,shield_dmg_at__normal)
+
+[DISABLE]
+
+shield_dmg_at:
+  readmem(shield_dmg_at__normal,5)
+
+unregistersymbol(shield_dmg_at,shield_dmg_at__normal)
+dealloc(newmem)
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <CheatCodes>
+    <CodeEntry>
+      <Description>Change of je Card-en-Ciel.exe+C5400</Description>
+      <AddressString>Card-en-Ciel.exe+C53F4</AddressString>
+      <Before>
+        <Byte>80</Byte>
+        <Byte>E2</Byte>
+        <Byte>01</Byte>
+        <Byte>8B</Byte>
+        <Byte>C6</Byte>
+      </Before>
+      <Actual>
+        <Byte>74</Byte>
+        <Byte>0A</Byte>
+      </Actual>
+      <After>
+        <Byte>41</Byte>
+        <Byte>8B</Byte>
+        <Byte>F7</Byte>
+        <Byte>44</Byte>
+        <Byte>89</Byte>
+      </After>
+    </CodeEntry>
+  </CheatCodes>
+  <UserdefinedSymbols/>
+</CheatTable>

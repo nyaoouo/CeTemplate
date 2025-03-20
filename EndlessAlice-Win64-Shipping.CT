@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+function findMonoFunction(namespace, cls, method, sign)
+  local methods = mono_class_enumMethods(mono_findClass(namespace,cls))
+  for i = 1,#methods do
+    if methods[i].name == method then
+      if sign == nil or mono_method_getSignature(methods[i].method) == sign then
+        return mono_compile_method(methods[i].method)
+      end
+    end
+  end
+  error(("cannot find method %s:%s:%s with sign "):format(namespace,cls,method,sign))
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('EndlessAlice-Win64-Shipping.exe')
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114072</ID>
+          <Description>"InfTalent"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(InfTalent_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    aobScanModule("InfTalent_at","EndlessAlice-Win64-Shipping.exe","e8 * * * * 39 46 ? 74 ?")
+  )
+end
+{$asm}
+alloc(InfTalent_alloc,$1000,InfTalent_at)
+label(InfTalent_code)
+label(InfTalent_return)
+label(InfTalent_vals)
+label(InfTalent_backup)
+
+InfTalent_alloc:
+InfTalent_vals:
+InfTalent_code:
+  mov rax, (int)999999
+  mov [rcx+B0], rax
+  ret
+InfTalent_backup:
+  readmem(InfTalent_at,6)
+  jmp InfTalent_return
+
+InfTalent_at:
+  jmp InfTalent_code
+  nop 1
+InfTalent_return:
+registersymbol(InfTalent_at,InfTalent_alloc,InfTalent_backup,InfTalent_vals)
+
+[DISABLE]
+
+InfTalent_at:
+  readmem(InfTalent_backup,6)
+
+dealloc(InfTalent_alloc)
+unregistersymbol(InfTalent_at,InfTalent_alloc,InfTalent_backup,InfTalent_vals)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114073</ID>
+          <Description>"InfReroll"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(InfReroll_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    aobScanModule("InfReroll_at","EndlessAlice-Win64-Shipping.exe","83 ? ? 41 ? ? ? 89 81 ? ? ? ? 41 ? ? ")
+  )
+end
+{$asm}
+alloc(InfReroll_alloc,$1000,InfReroll_at)
+label(InfReroll_code)
+label(InfReroll_return)
+label(InfReroll_vals)
+label(InfReroll_backup)
+
+InfReroll_alloc:
+InfReroll_vals:
+InfReroll_code:
+InfReroll_backup:
+  readmem(InfReroll_at,3)
+  jmp InfReroll_return
+
+InfReroll_at:
+  // jmp InfReroll_code
+  nop 3
+InfReroll_return:
+registersymbol(InfReroll_at,InfReroll_alloc,InfReroll_backup,InfReroll_vals)
+
+[DISABLE]
+
+InfReroll_at:
+  readmem(InfReroll_backup,3)
+
+dealloc(InfReroll_alloc)
+unregistersymbol(InfReroll_at,InfReroll_alloc,InfReroll_backup,InfReroll_vals)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114074</ID>
+          <Description>"NoItemCost"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(NoItemCost_at,%x)
+define(NoItemCost2_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    aobScanModule("NoItemCost_at","EndlessAlice-Win64-Shipping.exe","49 ? ? 89 47 ? e8 ? ? ? ? 4c ? ? ?"),
+    aobScanModule("NoItemCost2_at","EndlessAlice-Win64-Shipping.exe","7e ? 48 ? ? ? ? ? ? 45 ? ? 8b ? 48 ? ? 48 ? ? 0f 1f 40 ?")
+  )
+end
+{$asm}
+alloc(NoItemCost_alloc,$1000,NoItemCost_at)
+label(NoItemCost_code)
+label(NoItemCost_return)
+label(NoItemCost_vals)
+label(NoItemCost_backup)
+
+NoItemCost_alloc:
+NoItemCost_vals:
+  dq 0
+NoItemCost_code:
+  lea rcx, [rdi+20]
+  mov [NoItemCost_vals], rcx
+  mov ecx, [rdi+20]
+  cmp eax, ecx
+  cmovl eax, ecx
+NoItemCost_backup:
+  readmem(NoItemCost_at,6)
+  jmp NoItemCost_return
+
+NoItemCost_at:
+  jmp NoItemCost_code
+  nop 1
+NoItemCost_return:
+
+NoItemCost2_at:
+  db eb
+
+registersymbol(NoItemCost_at,NoItemCost_alloc,NoItemCost_backup,NoItemCost_vals,NoItemCost2_at)
+
+[DISABLE]
+NoItemCost2_at:
+  db 7e
+
+NoItemCost_at:
+  readmem(NoItemCost_backup,6)
+
+
+dealloc(NoItemCost_alloc)
+unregistersymbol(NoItemCost_at,NoItemCost_alloc,NoItemCost_backup,NoItemCost_vals,NoItemCost2_at)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114075</ID>
+              <Description>"last item count"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>NoItemCost_vals</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('Emberward.exe')
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>1</ID>
+          <Description>"InfGold"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return [[
+define(ReadGold_At,0)
+define(ReadGold_Module,0)
+]] end
+return ([[
+define(ReadGold_At,%08X)
+define(ReadGold_Module,%08X)
+]]):format(
+aobScanModule(nil, "GameAssembly.dll","8B 71 10 48 8B 0D ? ? ? ? e8 ? ? ? ? 48 ? ? 0f 84 ? ? ? ? 48 ? ? ? 48 ? ? 0f 84 ? ? ? ? 48 ? ?"),
+aobScanModule(nil, "GameAssembly.dll","48 ? ? * * * * 74 ? e8 ? ? ? ? 4c ? ? ? ? ? ? 8b")
+)
+{$asm}
+alloc(ReadGold_Alloc,$1000,ReadGold_At)
+label(ReadGold_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+ReadGold_Alloc:
+ReadGold_Backup:
+  readmem(ReadGold_At,10)
+code:
+  mov [rcx+10], (int)1000
+  mov esi, [rcx+10]
+  mov rcx, [ReadGold_Module]
+orig:
+  // readmem(ReadGold_At,10)
+  jmp return
+
+ReadGold_At:
+  jmp code
+  nop 5
+return:
+
+registersymbol(ReadGold_At,ReadGold_Alloc,ReadGold_Backup)
+
+[DISABLE]
+ReadGold_At:
+  readmem(ReadGold_Backup,10)
+
+dealloc(ReadGold_Alloc)
+unregistersymbol(ReadGold_At,ReadGold_Alloc,ReadGold_Backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"No Dec Hp"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return [[
+define(ChangeHp_At,0)
+]] end
+return ([[
+define(ChangeHp_At,%08X)
+]]):format(
+aobScanModule(nil, "GameAssembly.dll","48 89 5c 24 ? 85 ? 79 ?")
+)
+{$asm}
+alloc(ChangeHp_Alloc,$1000,ChangeHp_At)
+label(ChangeHp_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+ChangeHp_Alloc:
+ChangeHp_Backup:
+  readmem(ChangeHp_At,5)
+code:
+  cmp esi, 0
+  jge orig
+  mov esi, 0
+orig:
+  readmem(ChangeHp_At,5)
+  jmp return
+
+ChangeHp_At:
+  jmp code
+return:
+
+registersymbol(ChangeHp_At,ChangeHp_Alloc,ChangeHp_Backup)
+
+[DISABLE]
+ChangeHp_At:
+  readmem(ChangeHp_Backup,5)
+
+dealloc(ChangeHp_Alloc)
+unregistersymbol(ChangeHp_At,ChangeHp_Alloc,ChangeHp_Backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>3</ID>
+          <Description>"Inf Talent"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return [[
+define(ReadTalent_At,0)
+]] end
+return ([[
+define(ReadTalent_At,%08X)
+]]):format(
+aobScanModule(nil, "GameAssembly.dll","8b ? ? 48 ? ? ? ? 48 ? ? ? 33 ? e8 ? ? ? ? 48 ? ? 74 ? 4c ? ? 48 ? ? 48 ? ? 4d ? ? ? ? ? ? 41 ff 91 ? ? ? ? 39 74 24")
+)
+{$asm}
+alloc(ReadTalent_Alloc,$1000,ReadTalent_At)
+label(ReadTalent_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+ReadTalent_Alloc:
+ReadTalent_Backup:
+  readmem(ReadTalent_At,8)
+code:
+  mov [rax+10], (int)1000
+orig:
+  readmem(ReadTalent_At,8)
+  jmp return
+
+ReadTalent_At:
+  jmp code
+  nop 3
+return:
+
+registersymbol(ReadTalent_At,ReadTalent_Alloc,ReadTalent_Backup)
+
+[DISABLE]
+ReadTalent_At:
+  readmem(ReadTalent_Backup,8)
+
+dealloc(ReadTalent_Alloc)
+unregistersymbol(ReadTalent_At,ReadTalent_Alloc,ReadTalent_Backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>4</ID>
+          <Description>"No shop cost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return [[
+define(ShopUse_At,0)
+]] end
+return ([[
+define(ShopUse_At,%08X)
+]]):format(
+aobScanModule(nil, "GameAssembly.dll","48 ? ? ? ? ? ? 48 ? ? 48 ? ? 0f 84 ? ? ? ? 48 ? ? ? 48 ? ? 0f 84 ? ? ? ? 39 58 ? 7d ?")
+)
+{$asm}
+alloc(ShopUse_Alloc,$1000,ShopUse_At)
+label(ShopUse_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+ShopUse_Alloc:
+ShopUse_Backup:
+  readmem(ShopUse_At,7)
+code:
+  xor ebx,ebx
+orig:
+  readmem(ShopUse_At,7)
+  jmp return
+
+ShopUse_At:
+  jmp code
+  nop 2
+return:
+
+registersymbol(ShopUse_At,ShopUse_Alloc,ShopUse_Backup)
+
+[DISABLE]
+ShopUse_At:
+  readmem(ShopUse_Backup,8)
+
+dealloc(ShopUse_Alloc)
+unregistersymbol(ShopUse_At,ShopUse_Alloc,ShopUse_Backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5</ID>
+          <Description>"Auto Assemble script"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Emberward.exe
+  Version: 
+  Date   : 2024-11-24
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(DEC_REROLL,GameAssembly.dll,FF 89 BC 00 00 00) // should be unique
+alloc(newmem,$1000,DEC_REROLL)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  dec [rcx+000000BC]
+  jmp return
+
+DEC_REROLL:
+  nop 6
+return:
+registersymbol(DEC_REROLL)
+
+[DISABLE]
+
+DEC_REROLL:
+  db FF 89 BC 00 00 00
+
+unregistersymbol(DEC_REROLL)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll.il2cpp+B0B40
+
+GameAssembly.dll.il2cpp+B0B1E: CC                    - int 3 
+GameAssembly.dll.il2cpp+B0B1F: CC                    - int 3 
+GameAssembly.dll.il2cpp+B0B20: 40 53                 - push rbx
+GameAssembly.dll.il2cpp+B0B22: 48 83 EC 20           - sub rsp,20
+GameAssembly.dll.il2cpp+B0B26: 80 B9 B8 00 00 00 00  - cmp byte ptr [rcx+000000B8],00
+GameAssembly.dll.il2cpp+B0B2D: 48 8B D9              - mov rbx,rcx
+GameAssembly.dll.il2cpp+B0B30: 75 77                 - jne GameAssembly.dll.il2cpp+B0BA9
+GameAssembly.dll.il2cpp+B0B32: 83 B9 BC 00 00 00 00  - cmp dword ptr [rcx+000000BC],00
+GameAssembly.dll.il2cpp+B0B39: 7E 6E                 - jle GameAssembly.dll.il2cpp+B0BA9
+GameAssembly.dll.il2cpp+B0B3B: 48 89 7C 24 30        - mov [rsp+30],rdi
+// ---------- INJECTING HERE ----------
+GameAssembly.dll.il2cpp+B0B40: FF 89 BC 00 00 00     - dec [rcx+000000BC]
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll.il2cpp+B0B46: 33 D2                 - xor edx,edx
+GameAssembly.dll.il2cpp+B0B48: 48 8B B9 80 00 00 00  - mov rdi,[rcx+00000080]
+GameAssembly.dll.il2cpp+B0B4F: 48 81 C1 BC 00 00 00  - add rcx,000000BC
+GameAssembly.dll.il2cpp+B0B56: E8 65 7E B1 01        - call GameAssembly.dll.il2cpp+1BC89C0
+GameAssembly.dll.il2cpp+B0B5B: 48 85 FF              - test rdi,rdi
+GameAssembly.dll.il2cpp+B0B5E: 74 4F                 - je GameAssembly.dll.il2cpp+B0BAF
+GameAssembly.dll.il2cpp+B0B60: 4C 8B 0F              - mov r9,[rdi]
+GameAssembly.dll.il2cpp+B0B63: 48 8B D0              - mov rdx,rax
+GameAssembly.dll.il2cpp+B0B66: 48 8B CF              - mov rcx,rdi
+GameAssembly.dll.il2cpp+B0B69: 4D 8B 81 60 05 00 00  - mov r8,[r9+00000560]
+}
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

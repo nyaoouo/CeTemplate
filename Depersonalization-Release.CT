@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('Depersonalization-Release.exe')
+    if not monopipe then
+      if LaunchMonoDataCollector() == 0 then
+        error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+      end
+    end
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"HookDice"</Description>
+          <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+alloc(HookDice_Alloc,$1000)
+label(HookDiceIncludePesudo_Backup)
+label(HookDiceBattle_Backup)
+label(HookDice_Value)
+
+HookDice_Alloc:
+HookDiceIncludePesudo_Backup:
+  readmem(UIDicePanel:_GetFinalRollValue,20)
+HookDiceBattle_Backup:
+  readmem(BattleDiceHelper:GetRollVaule,20)
+HookDice_Value:
+  dq 1
+
+registersymbol(HookDice_Alloc,HookDiceIncludePesudo_Backup,HookDiceBattle_Backup,HookDice_Value)
+
+[DISABLE]
+dealloc(HookDice_Alloc)
+unregistersymbol(HookDice_Alloc,HookDiceIncludePesudo_Backup,HookDiceBattle_Backup,HookDice_Value)
+
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>4</ID>
+              <Description>"HookValue"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>HookDice_Value</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>3</ID>
+              <Description>"IncludePesudo"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+UIDicePanel:_GetFinalRollValue:
+  mov rax, HookDice_Value
+  mov rax, [rax]
+  ret
+
+[DISABLE]
+UIDicePanel:_GetFinalRollValue:
+  readmem(HookDiceIncludePesudo_Backup,20)
+
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5</ID>
+              <Description>"OnlyRealRandom"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+BattleDiceHelper:GetRollVaule:
+  mov rax, HookDice_Value
+  mov rax, [rax]
+  ret
+
+[DISABLE]
+BattleDiceHelper:GetRollVaule:
+  readmem(HookDiceBattle_Backup,20)
+
+
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+  <Comments>Info about this table:
+</Comments>
+  <LuaScript>
+</LuaScript>
+</CheatTable>

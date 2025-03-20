@@ -1,0 +1,1821 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"itemChangeAdd999"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Game   : granblue_fantasy_relink.exe
+  Version: 
+  Date   : 2024-02-01
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+
+aobscanmodule(ItemChange,granblue_fantasy_relink.exe,00 90 48 83 C4 28 5B 5F 5E 41 5E C3 CC CC CC CC CC 55 41 57 41 56) // should be unique
+alloc(ItemChangeData,$1000,ItemChange)
+
+label(code)
+label(return)
+
+ItemChangeData:
+  mov r8d 999
+
+code:
+  push rbp
+  push r15
+  push r14
+  jmp return
+
+ItemChange+11:
+  jmp ItemChangeData
+return:
+registersymbol(ItemChangeData)
+registersymbol(ItemChange)
+
+[DISABLE]
+
+ItemChange+11:
+  db 55 41 57 41 56
+
+unregistersymbol(ItemChangeData)
+unregistersymbol(ItemChange)
+dealloc(ItemChangeData)
+
+{
+// ORIGINAL CODE - INJECTION POINT: granblue_fantasy_relink.exe+301C50
+
+granblue_fantasy_relink.exe+301C45: 5B                       - pop rbx
+granblue_fantasy_relink.exe+301C46: 5F                       - pop rdi
+granblue_fantasy_relink.exe+301C47: 5E                       - pop rsi
+granblue_fantasy_relink.exe+301C48: 41 5E                    - pop r14
+granblue_fantasy_relink.exe+301C4A: C3                       - ret 
+granblue_fantasy_relink.exe+301C4B: CC                       - int 3 
+granblue_fantasy_relink.exe+301C4C: CC                       - int 3 
+granblue_fantasy_relink.exe+301C4D: CC                       - int 3 
+granblue_fantasy_relink.exe+301C4E: CC                       - int 3 
+granblue_fantasy_relink.exe+301C4F: CC                       - int 3 
+// ---------- INJECTING HERE ----------
+granblue_fantasy_relink.exe+301C50: 55                       - push rbp
+// ---------- DONE INJECTING  ----------
+granblue_fantasy_relink.exe+301C51: 41 57                    - push r15
+granblue_fantasy_relink.exe+301C53: 41 56                    - push r14
+granblue_fantasy_relink.exe+301C55: 41 55                    - push r13
+granblue_fantasy_relink.exe+301C57: 41 54                    - push r12
+granblue_fantasy_relink.exe+301C59: 56                       - push rsi
+granblue_fantasy_relink.exe+301C5A: 57                       - push rdi
+granblue_fantasy_relink.exe+301C5B: 53                       - push rbx
+granblue_fantasy_relink.exe+301C5C: 48 81 EC D8 00 00 00     - sub rsp,000000D8
+granblue_fantasy_relink.exe+301C63: 48 8D AC 24 80 00 00 00  - lea rbp,[rsp+00000080]
+granblue_fantasy_relink.exe+301C6B: 48 83 E4 E0              - and rsp,-20
+}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>3</ID>
+      <Description>"force_can_upgrade"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Game   : granblue_fantasy_relink.exe
+  Version: 
+  Date   : 2024-02-02
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(nocost_upgrade_weapon_max,granblue_fantasy_relink.exe,01 4C 8B 2D * * * * 8B 37 44 8B 67 04 49 8D 8D 90 05 00 00) // should be unique
+aobscanmodule(nocost_upgrade_materia,granblue_fantasy_relink.exe,44 8B 6F 04 49 8D 8F 90 05 00 00) // should be unique
+aobscanmodule(nocost_upgrade_weapon_sp,granblue_fantasy_relink.exe,44 8B 7B 04 49 8B 45 00) // should be unique
+
+nocost_upgrade_weapon_max+0A:
+  xor r12d r12d
+  nop
+nocost_upgrade_materia:
+  xor r13d r13d
+  nop
+nocost_upgrade_weapon_sp:
+  xor r15d r15d
+  nop
+registersymbol(nocost_upgrade_weapon_max)
+registersymbol(nocost_upgrade_materia)
+registersymbol(nocost_upgrade_weapon_sp)
+
+[DISABLE]
+
+nocost_upgrade_weapon_max+0A:
+  db 44 8B 67 04
+nocost_upgrade_materia:
+  db 44 8B 6F 04
+nocost_upgrade_weapon_sp:
+  db 44 8B 7B 04
+unregistersymbol(nocost_upgrade_weapon_max)
+unregistersymbol(nocost_upgrade_materia)
+unregistersymbol(nocost_upgrade_weapon_sp)
+
+{
+// ORIGINAL CODE - INJECTION POINT: granblue_fantasy_relink.exe+34CD759
+
+granblue_fantasy_relink.exe+34CD728: 41 89 D9              - mov r9d,ebx
+granblue_fantasy_relink.exe+34CD72B: E8 40 5E E0 FC        - call granblue_fantasy_relink.exe+2D3570
+granblue_fantasy_relink.exe+34CD730: 41 89 86 A4 03 00 00  - mov [r14+000003A4],eax
+granblue_fantasy_relink.exe+34CD737: 49 8B BE B0 03 00 00  - mov rdi,[r14+000003B0]
+granblue_fantasy_relink.exe+34CD73E: 4D 8B BE B8 03 00 00  - mov r15,[r14+000003B8]
+granblue_fantasy_relink.exe+34CD745: 4C 39 FF              - cmp rdi,r15
+granblue_fantasy_relink.exe+34CD748: 0F 84 C4 04 00 00     - je granblue_fantasy_relink.exe+34CDC12
+granblue_fantasy_relink.exe+34CD74E: B3 01                 - mov bl,01
+granblue_fantasy_relink.exe+34CD750: 4C 8B 2D A9 19 2A 03  - mov r13,[granblue_fantasy_relink.exe+676F100]
+granblue_fantasy_relink.exe+34CD757: 8B 37                 - mov esi,[rdi]
+// ---------- INJECTING HERE ----------
+granblue_fantasy_relink.exe+34CD759: 44 8B 67 04           - mov r12d,[rdi+04]
+// ---------- DONE INJECTING  ----------
+granblue_fantasy_relink.exe+34CD75D: 49 8D 8D 90 05 00 00  - lea rcx,[r13+00000590]
+granblue_fantasy_relink.exe+34CD764: 49 8B 85 90 05 00 00  - mov rax,[r13+00000590]
+granblue_fantasy_relink.exe+34CD76B: 48 8D 55 D0           - lea rdx,[rbp-30]
+granblue_fantasy_relink.exe+34CD76F: FF 50 18              - call qword ptr [rax+18]
+granblue_fantasy_relink.exe+34CD772: 39 75 D0              - cmp [rbp-30],esi
+granblue_fantasy_relink.exe+34CD775: 74 69                 - je granblue_fantasy_relink.exe+34CD7E0
+granblue_fantasy_relink.exe+34CD777: 41 8B 95 50 2B 00 00  - mov edx,[r13+00002B50]
+granblue_fantasy_relink.exe+34CD77E: 21 F2                 - and edx,esi
+granblue_fantasy_relink.exe+34CD780: 4D 8B 85 28 2B 00 00  - mov r8,[r13+00002B28]
+granblue_fantasy_relink.exe+34CD787: 49 8B 85 38 2B 00 00  - mov rax,[r13+00002B38]
+}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>84</ID>
+      <Description>"char_enhance_pt"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Game   : granblue_fantasy_relink.exe
+  Version: 
+  Date   : 2024-02-03
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(char_enhance_pt,granblue_fantasy_relink.exe,44 8B AD 98 00 00 00 44) // should be unique
+alloc(newmem,$1000,char_enhance_pt)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  mov dword ptr [rbp+00000098], 10000
+  mov r13d,[rbp+00000098]
+  jmp return
+
+char_enhance_pt:
+  jmp newmem
+  nop 2
+return:
+registersymbol(char_enhance_pt)
+
+[DISABLE]
+
+char_enhance_pt:
+  db 44 8B AD 98 00 00 00
+
+unregistersymbol(char_enhance_pt)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: granblue_fantasy_relink.exe+271D69
+
+granblue_fantasy_relink.exe+271D43: 41 89 D8                 - mov r8d,ebx
+granblue_fantasy_relink.exe+271D46: 41 89 F9                 - mov r9d,edi
+granblue_fantasy_relink.exe+271D49: E8 02 F2 FF FF           - call granblue_fantasy_relink.exe+270F50
+granblue_fantasy_relink.exe+271D4E: 48 8B 44 24 28           - mov rax,[rsp+28]
+granblue_fantasy_relink.exe+271D53: 48 85 C0                 - test rax,rax
+granblue_fantasy_relink.exe+271D56: 74 09                    - je granblue_fantasy_relink.exe+271D61
+granblue_fantasy_relink.exe+271D58: 8B 40 30                 - mov eax,[rax+30]
+granblue_fantasy_relink.exe+271D5B: 89 44 24 34              - mov [rsp+34],eax
+granblue_fantasy_relink.exe+271D5F: EB 08                    - jmp granblue_fantasy_relink.exe+271D69
+granblue_fantasy_relink.exe+271D61: C7 44 24 34 00 00 00 00  - mov [rsp+34],00000000
+// ---------- INJECTING HERE ----------
+granblue_fantasy_relink.exe+271D69: 44 8B AD 98 00 00 00     - mov r13d,[rbp+00000098]
+// ---------- DONE INJECTING  ----------
+granblue_fantasy_relink.exe+271D70: 44 89 64 24 20           - mov [rsp+20],r12d
+granblue_fantasy_relink.exe+271D75: 48 8D 54 24 28           - lea rdx,[rsp+28]
+granblue_fantasy_relink.exe+271D7A: 48 89 F1                 - mov rcx,rsi
+granblue_fantasy_relink.exe+271D7D: 41 89 D8                 - mov r8d,ebx
+granblue_fantasy_relink.exe+271D80: 41 89 F9                 - mov r9d,edi
+granblue_fantasy_relink.exe+271D83: E8 C8 F1 FF FF           - call granblue_fantasy_relink.exe+270F50
+granblue_fantasy_relink.exe+271D88: 48 8B 44 24 28           - mov rax,[rsp+28]
+granblue_fantasy_relink.exe+271D8D: 48 85 C0                 - test rax,rax
+granblue_fantasy_relink.exe+271D90: 74 06                    - je granblue_fantasy_relink.exe+271D98
+granblue_fantasy_relink.exe+271D92: 44 8B 78 28              - mov r15d,[rax+28]
+}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>130</ID>
+      <Description>"紧凑模式"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+--https://forum.cheatengine.org/viewtopic.php?t=570055
+LuaCall(function cycleFullCompact(sender,force) local state = not(compactmenuitem.Caption == 'Compact View Mode'); if force~=nil then state = not force end; compactmenuitem.Caption = state and 'Compact View Mode' or 'Full View Mode'; getMainForm().Splitter1.Visible = state; getMainForm().Panel4.Visible    = state; getMainForm().Panel5.Visible    = state; end; function addCompactMenu() if compactmenualreadyexists then return end; local parent = getMainForm().Menu.Items; compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem); compactmenuitem.Caption = 'Compact View Mode'; compactmenuitem.OnClick = cycleFullCompact; compactmenualreadyexists = 'yes'; end; addCompactMenu(); cycleFullCompact(nil,true))
+
+[DISABLE]
+LuaCall(cycleFullCompact(nil,false))
+
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>85</ID>
+      <Description>"随时使用战斗辅助"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+if syntaxcheck then return end
+function GetParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+[ENABLE]
+function Main()
+  AutoAssemble([[
+aobscanmodule(p_can_use_assist,granblue_fantasy_relink.exe,e8 * * * * 84 ? 74 ? 8b ? 31) // should be unique
+registersymbol(p_can_use_assist)
+  ]])
+  can_use_assist = GetParam(getAddress("p_can_use_assist"), 1)
+  registerSymbol("can_use_assist",can_use_assist)
+  AutoAssemble([[
+alloc(can_use_assist_data,$1000,can_use_assist)
+
+label(can_use_assist_orig)
+
+can_use_assist_data:
+can_use_assist_orig:
+  readmem(can_use_assist, 4)
+
+can_use_assist:
+  mov al 1
+  ret
+
+registersymbol(can_use_assist_orig)
+registersymbol(can_use_assist_data)
+  ]])
+end
+Main()
+[DISABLE]
+function Main()
+  AutoAssemble([[
+can_use_assist:
+  readmem(can_use_assist_orig, 4)
+
+dealloc(can_use_assist_data)
+unregistersymbol(p_can_use_assist)
+unregistersymbol(can_use_assist)
+unregistersymbol(can_use_assist_data)
+unregistersymbol(can_use_assist_orig)
+  ]])
+end
+Main()
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>86</ID>
+      <Description>"添加因子"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+if syntaxcheck then return end
+
+--                ∨∨∨∨∨∨∨∨∨∨∨∨
+--                这里输入因子id
+--                ∨∨∨∨∨∨∨∨∨∨∨∨
+materia_to_add = "这里输入因子id" -- &lt;&lt;&lt;&lt;&lt;&lt;这里输入因子id
+--                ^^^^^^^^^^
+--                这里输入因子id
+--                ^^^^^^^^^^
+
+
+
+AutoAssemble([[
+aobscanmodule(addMateria_pfunc_, $process, 45 ? ? 44 ? ? ? e8 * * * * 85 ? 74)
+registersymbol(addMateria_pfunc_)
+aobscanmodule(addMateria_this_, $process, 4c ? ? * * * * 49 83 ba ? ? ? ? ?)
+registersymbol(addMateria_this_)
+]])
+
+function GetParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+function AddMateria()
+  if (materia_to_add == "这里输入因子id") then
+    ShowMessage("编辑本脚本输入id再执行")
+    error()
+  end
+  local materia_id = type(materia_to_add) == "number" and materia_to_add or tonumber(materia_to_add, 16);
+  executeCodeEx(0, nil, addMateria_pfunc, {type=0,value=readQword(addMateria_this)}, {type=0,value=materia_id}, 0, 0, 0);
+end
+addMateria_pfunc = GetParam(getAddress("addMateria_pfunc_"), 8);
+addMateria_this = GetParam(getAddress("addMateria_this_"), 3);
+
+
+[ENABLE]
+AddMateria()
+[DISABLE]
+AddMateria()
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>93</ID>
+      <Description>"当前选中武器 (当前装备武器无效，未曾附魔无效) (装备页面列表加载)"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+aobscanmodule(selectedWeapon_eq,granblue_fantasy_relink.exe,49 8B 8C 24 C8 00 00 00 48 ? ? 74 ? 4c ? ? e8) // should be unique
+alloc(selectedWeapon_alloc,$1000,selectedWeapon_eq)
+
+label(code_eq)
+label(return_eq)
+
+selectedWeapon_alloc:
+  db 00 00 00 00 00 00 00 00
+
+code_eq:
+  mov rcx, [r12+0C8]
+  mov [selectedWeapon_alloc], r13
+  jmp return_eq
+
+selectedWeapon_eq:
+  jmp code_eq
+  nop 3
+return_eq:
+
+registersymbol(selectedWeapon_alloc)
+registersymbol(selectedWeapon_eq)
+
+[DISABLE]
+
+selectedWeapon_eq:
+  db 49 8B 8C 24 C8 00 00 00
+
+dealloc(selectedWeapon_alloc)
+
+unregistersymbol(selectedWeapon_alloc)
+unregistersymbol(selectedWeapon_eq)
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>94</ID>
+          <Description>"技能1"</Description>
+          <DropDownList DisplayValueAsItem="1">50079A1C:攻击力
+F372F096:体力
+8D78A19B:暴击率
+CEB700EE:昏厥
+3F488339:背水
+2FC8FBFF:热血
+1C360C63:蓄力攻击
+3FEC5F80:协同攻击
+8D078597:投掷
+C0979A17:暴击伤害
+6B694D6D:弱点攻击
+A7A45F28:连击收招
+B360801D:集中炮火
+DC584F60:伤害上限
+F17850B9:连击加成
+71F11A9B:暴君
+C35B111B:蓄力会心
+4F1A3683:弱化状态特效
+A9D17F55:OVERDRIVE特效
+AC9674C1:破防特效
+E6CDBA9C:坚守
+A1A8E39D:霸体
+E69A4694:豪胆
+973B49AF:中毒抗性
+7C84A6B3:灼热抗性
+D54F8CA7:泥沙抗性
+FB572681:冰冻抗性
+3759A5B9:昏迷抗性
+2242921F:麻痹抗性
+50B453DD:能力封印抗性
+CFB48782:奥义封印抗性
+0AA20846:格挡性能
+3C2B57B0:格挡仇火
+8B3BF60C:躲避性能
+7C2E4D64:躲避仇火
+9389CC06:回复性能
+6085DA25:自愈
+7CCFF74F:HP吸收
+95F3FA86:自动复活
+318D12E9:迅捷能力
+05F2ECDC:怒涛
+B5FF9FD3:激昂
+24883AF3:药水携带数
+DC607D75:匿踪
+6018372B:挑衅
+F687C5EF:获得经验值
+C86F3082:获得金币
+EAE321EB:能力伤害
+E0ABFDFE:守护
+A2FA9685:缓速抗性
+B6E31F76:不动
+9702860F:灾祸抗性
+0053599E:蓄力强化
+1470F860:坚持
+3F2C482E:强化效果延长
+0EAD65E0:全弱化效果抗性
+09AA7DB5:凝神
+D2C8E10A:明镜止水
+29B292A8:抗争
+7EDD69D0:怒发冲冠
+8F502F0D:奋不顾身
+84078CB0:快速蓄力
+57E8A93F:因子强化
+CD030268:英勇神速
+A38510E2:英勇灵气
+3BFED918:守护者的决心
+F8496336:守护者的骄傲
+151E4674:舵手的指引
+A374FDF0:舵手的坚持
+B48EEF48:魔法师的心愿
+11AAE5F5:魔法师的伶利
+AA83F548:老兵的智慧
+921B6B0C:老兵的天眼
+23D0F67F:玫瑰早绽
+C2A4C7A9:玫瑰缤纷
+9A9DC170:圣骑士的剑辉
+522E2388:圣骑士的威光
+5463232F:古今无双的气概
+451D814C:古今无双的强者
+D908223D:幽幻之谊
+7351D602:幽幻之应
+29B07BEB:斩姬梦幻
+A63B89CD:斩姬武艺
+8CDF9382:白龙的誓约
+D1012D8C:白龙的荣耀
+2E65A774:勇士的信念
+16EFF868:勇士的毅力
+E60A735C:王者行进
+6FF05223:王者一心
+86CBCDC4:屠龙者的威猛
+05FA4599:屠龙者的才智
+EC3CF174:极致谋略
+AF513A9D:极致真理
+0CD6C625:变幻自如的迅刃
+A3B49220:变幻自如的妖剑士
+6EBFA176:真红烈焰
+F1D5DBD0:真红翔舞
+7440E869:冥暗刚刃
+CD124165:冥暗自若
+93A2093C:异能增长
+7AD0C010:异能战意
+0FBA47E8:强健甘露
+A4D6B880:修炼甘露
+CDEB73F6:幸运甘露
+1DC9D7E7:水牢抗性
+DD4A701E:异能耐受
+4BF2E191:攻击DOWN抗性
+66DE60B1:防御DOWN抗性
+082033CB:钳蟹的共鸣
+1B0D9897:钳蟹的报恩
+9AD8B5E6:7net
+40223C28:浩劫
+74AA75D6:刚健
+DC225C96:修罗
+4C588C27:属性克制转换
+5E422AE5:获得MSP
+AF794A87:躲避距离
+57AB5B10:追击
+82CE278D:身无长技
+1568E0E4:先发制人
+70395731:穷寇心
+CD18A77D:万能药
+333E5862:骰子剑
+A8A3163B:刀上舞
+EC1C6779:摇曳步
+DBE1D775:α秘纹
+8D2ADB6E:β秘纹
+5C862E13:γ秘纹
+77C809F5:剑圣的炼气
+9230E3F5:剑圣的闪刃
+7B4FC47A:剑圣的战气
+EF05EC4D:涯之七星
+E85FF8E0:魔眼的万箭
+8572B8AF:魔眼的凛翔
+81B293D9:魔眼的战气
+281214AB:涯之二王
+DADE14DC:英勇之心
+9AFDFA9E:守护者的战气
+D76F4D24:舵手的战气
+C00163B3:魔法师的战气
+0E42BE1B:老兵的战气
+8519AD4A:玫瑰的战气
+B85202BC:圣骑士的战气
+0F026CF0:古今无双的战气
+A339D642:幽幻的战气
+FDD1AD24:斩姬的战气
+6316CBEB:白龙的战气
+D8F66C1C:勇士的战气
+BA504607:王者的战气
+C7D379F1:屠龙者的战气
+E6B92E34:极致的战气
+DAEFBB27:变幻自如的战气
+4F135217:真红的战气
+D7F9BB88:冥暗的战气
+B064A634:异能之心
+D3B8C21F:终极钳蟹因子
+48A95B8D:金刚
+F71F8997:自动药水
+887AE0B0:-
+</DropDownList>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedWeapon_alloc</Address>
+          <Offsets>
+            <Offset>20</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>115</ID>
+              <Description>"等级"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+4</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>98</ID>
+          <Description>"技能2"</Description>
+          <DropDownList DisplayValueAsItem="1">50079A1C:攻击力
+F372F096:体力
+8D78A19B:暴击率
+CEB700EE:昏厥
+3F488339:背水
+2FC8FBFF:热血
+1C360C63:蓄力攻击
+3FEC5F80:协同攻击
+8D078597:投掷
+C0979A17:暴击伤害
+6B694D6D:弱点攻击
+A7A45F28:连击收招
+B360801D:集中炮火
+DC584F60:伤害上限
+F17850B9:连击加成
+71F11A9B:暴君
+C35B111B:蓄力会心
+4F1A3683:弱化状态特效
+A9D17F55:OVERDRIVE特效
+AC9674C1:破防特效
+E6CDBA9C:坚守
+A1A8E39D:霸体
+E69A4694:豪胆
+973B49AF:中毒抗性
+7C84A6B3:灼热抗性
+D54F8CA7:泥沙抗性
+FB572681:冰冻抗性
+3759A5B9:昏迷抗性
+2242921F:麻痹抗性
+50B453DD:能力封印抗性
+CFB48782:奥义封印抗性
+0AA20846:格挡性能
+3C2B57B0:格挡仇火
+8B3BF60C:躲避性能
+7C2E4D64:躲避仇火
+9389CC06:回复性能
+6085DA25:自愈
+7CCFF74F:HP吸收
+95F3FA86:自动复活
+318D12E9:迅捷能力
+05F2ECDC:怒涛
+B5FF9FD3:激昂
+24883AF3:药水携带数
+DC607D75:匿踪
+6018372B:挑衅
+F687C5EF:获得经验值
+C86F3082:获得金币
+EAE321EB:能力伤害
+E0ABFDFE:守护
+A2FA9685:缓速抗性
+B6E31F76:不动
+9702860F:灾祸抗性
+0053599E:蓄力强化
+1470F860:坚持
+3F2C482E:强化效果延长
+0EAD65E0:全弱化效果抗性
+09AA7DB5:凝神
+D2C8E10A:明镜止水
+29B292A8:抗争
+7EDD69D0:怒发冲冠
+8F502F0D:奋不顾身
+84078CB0:快速蓄力
+57E8A93F:因子强化
+CD030268:英勇神速
+A38510E2:英勇灵气
+3BFED918:守护者的决心
+F8496336:守护者的骄傲
+151E4674:舵手的指引
+A374FDF0:舵手的坚持
+B48EEF48:魔法师的心愿
+11AAE5F5:魔法师的伶利
+AA83F548:老兵的智慧
+921B6B0C:老兵的天眼
+23D0F67F:玫瑰早绽
+C2A4C7A9:玫瑰缤纷
+9A9DC170:圣骑士的剑辉
+522E2388:圣骑士的威光
+5463232F:古今无双的气概
+451D814C:古今无双的强者
+D908223D:幽幻之谊
+7351D602:幽幻之应
+29B07BEB:斩姬梦幻
+A63B89CD:斩姬武艺
+8CDF9382:白龙的誓约
+D1012D8C:白龙的荣耀
+2E65A774:勇士的信念
+16EFF868:勇士的毅力
+E60A735C:王者行进
+6FF05223:王者一心
+86CBCDC4:屠龙者的威猛
+05FA4599:屠龙者的才智
+EC3CF174:极致谋略
+AF513A9D:极致真理
+0CD6C625:变幻自如的迅刃
+A3B49220:变幻自如的妖剑士
+6EBFA176:真红烈焰
+F1D5DBD0:真红翔舞
+7440E869:冥暗刚刃
+CD124165:冥暗自若
+93A2093C:异能增长
+7AD0C010:异能战意
+0FBA47E8:强健甘露
+A4D6B880:修炼甘露
+CDEB73F6:幸运甘露
+1DC9D7E7:水牢抗性
+DD4A701E:异能耐受
+4BF2E191:攻击DOWN抗性
+66DE60B1:防御DOWN抗性
+082033CB:钳蟹的共鸣
+1B0D9897:钳蟹的报恩
+9AD8B5E6:7net
+40223C28:浩劫
+74AA75D6:刚健
+DC225C96:修罗
+4C588C27:属性克制转换
+5E422AE5:获得MSP
+AF794A87:躲避距离
+57AB5B10:追击
+82CE278D:身无长技
+1568E0E4:先发制人
+70395731:穷寇心
+CD18A77D:万能药
+333E5862:骰子剑
+A8A3163B:刀上舞
+EC1C6779:摇曳步
+DBE1D775:α秘纹
+8D2ADB6E:β秘纹
+5C862E13:γ秘纹
+77C809F5:剑圣的炼气
+9230E3F5:剑圣的闪刃
+7B4FC47A:剑圣的战气
+EF05EC4D:涯之七星
+E85FF8E0:魔眼的万箭
+8572B8AF:魔眼的凛翔
+81B293D9:魔眼的战气
+281214AB:涯之二王
+DADE14DC:英勇之心
+9AFDFA9E:守护者的战气
+D76F4D24:舵手的战气
+C00163B3:魔法师的战气
+0E42BE1B:老兵的战气
+8519AD4A:玫瑰的战气
+B85202BC:圣骑士的战气
+0F026CF0:古今无双的战气
+A339D642:幽幻的战气
+FDD1AD24:斩姬的战气
+6316CBEB:白龙的战气
+D8F66C1C:勇士的战气
+BA504607:王者的战气
+C7D379F1:屠龙者的战气
+E6B92E34:极致的战气
+DAEFBB27:变幻自如的战气
+4F135217:真红的战气
+D7F9BB88:冥暗的战气
+B064A634:异能之心
+D3B8C21F:终极钳蟹因子
+48A95B8D:金刚
+F71F8997:自动药水
+887AE0B0:-
+</DropDownList>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedWeapon_alloc</Address>
+          <Offsets>
+            <Offset>28</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>116</ID>
+              <Description>"等级"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+4</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>96</ID>
+          <Description>"技能3"</Description>
+          <DropDownList DisplayValueAsItem="1">50079A1C:攻击力
+F372F096:体力
+8D78A19B:暴击率
+CEB700EE:昏厥
+3F488339:背水
+2FC8FBFF:热血
+1C360C63:蓄力攻击
+3FEC5F80:协同攻击
+8D078597:投掷
+C0979A17:暴击伤害
+6B694D6D:弱点攻击
+A7A45F28:连击收招
+B360801D:集中炮火
+DC584F60:伤害上限
+F17850B9:连击加成
+71F11A9B:暴君
+C35B111B:蓄力会心
+4F1A3683:弱化状态特效
+A9D17F55:OVERDRIVE特效
+AC9674C1:破防特效
+E6CDBA9C:坚守
+A1A8E39D:霸体
+E69A4694:豪胆
+973B49AF:中毒抗性
+7C84A6B3:灼热抗性
+D54F8CA7:泥沙抗性
+FB572681:冰冻抗性
+3759A5B9:昏迷抗性
+2242921F:麻痹抗性
+50B453DD:能力封印抗性
+CFB48782:奥义封印抗性
+0AA20846:格挡性能
+3C2B57B0:格挡仇火
+8B3BF60C:躲避性能
+7C2E4D64:躲避仇火
+9389CC06:回复性能
+6085DA25:自愈
+7CCFF74F:HP吸收
+95F3FA86:自动复活
+318D12E9:迅捷能力
+05F2ECDC:怒涛
+B5FF9FD3:激昂
+24883AF3:药水携带数
+DC607D75:匿踪
+6018372B:挑衅
+F687C5EF:获得经验值
+C86F3082:获得金币
+EAE321EB:能力伤害
+E0ABFDFE:守护
+A2FA9685:缓速抗性
+B6E31F76:不动
+9702860F:灾祸抗性
+0053599E:蓄力强化
+1470F860:坚持
+3F2C482E:强化效果延长
+0EAD65E0:全弱化效果抗性
+09AA7DB5:凝神
+D2C8E10A:明镜止水
+29B292A8:抗争
+7EDD69D0:怒发冲冠
+8F502F0D:奋不顾身
+84078CB0:快速蓄力
+57E8A93F:因子强化
+CD030268:英勇神速
+A38510E2:英勇灵气
+3BFED918:守护者的决心
+F8496336:守护者的骄傲
+151E4674:舵手的指引
+A374FDF0:舵手的坚持
+B48EEF48:魔法师的心愿
+11AAE5F5:魔法师的伶利
+AA83F548:老兵的智慧
+921B6B0C:老兵的天眼
+23D0F67F:玫瑰早绽
+C2A4C7A9:玫瑰缤纷
+9A9DC170:圣骑士的剑辉
+522E2388:圣骑士的威光
+5463232F:古今无双的气概
+451D814C:古今无双的强者
+D908223D:幽幻之谊
+7351D602:幽幻之应
+29B07BEB:斩姬梦幻
+A63B89CD:斩姬武艺
+8CDF9382:白龙的誓约
+D1012D8C:白龙的荣耀
+2E65A774:勇士的信念
+16EFF868:勇士的毅力
+E60A735C:王者行进
+6FF05223:王者一心
+86CBCDC4:屠龙者的威猛
+05FA4599:屠龙者的才智
+EC3CF174:极致谋略
+AF513A9D:极致真理
+0CD6C625:变幻自如的迅刃
+A3B49220:变幻自如的妖剑士
+6EBFA176:真红烈焰
+F1D5DBD0:真红翔舞
+7440E869:冥暗刚刃
+CD124165:冥暗自若
+93A2093C:异能增长
+7AD0C010:异能战意
+0FBA47E8:强健甘露
+A4D6B880:修炼甘露
+CDEB73F6:幸运甘露
+1DC9D7E7:水牢抗性
+DD4A701E:异能耐受
+4BF2E191:攻击DOWN抗性
+66DE60B1:防御DOWN抗性
+082033CB:钳蟹的共鸣
+1B0D9897:钳蟹的报恩
+9AD8B5E6:7net
+40223C28:浩劫
+74AA75D6:刚健
+DC225C96:修罗
+4C588C27:属性克制转换
+5E422AE5:获得MSP
+AF794A87:躲避距离
+57AB5B10:追击
+82CE278D:身无长技
+1568E0E4:先发制人
+70395731:穷寇心
+CD18A77D:万能药
+333E5862:骰子剑
+A8A3163B:刀上舞
+EC1C6779:摇曳步
+DBE1D775:α秘纹
+8D2ADB6E:β秘纹
+5C862E13:γ秘纹
+77C809F5:剑圣的炼气
+9230E3F5:剑圣的闪刃
+7B4FC47A:剑圣的战气
+EF05EC4D:涯之七星
+E85FF8E0:魔眼的万箭
+8572B8AF:魔眼的凛翔
+81B293D9:魔眼的战气
+281214AB:涯之二王
+DADE14DC:英勇之心
+9AFDFA9E:守护者的战气
+D76F4D24:舵手的战气
+C00163B3:魔法师的战气
+0E42BE1B:老兵的战气
+8519AD4A:玫瑰的战气
+B85202BC:圣骑士的战气
+0F026CF0:古今无双的战气
+A339D642:幽幻的战气
+FDD1AD24:斩姬的战气
+6316CBEB:白龙的战气
+D8F66C1C:勇士的战气
+BA504607:王者的战气
+C7D379F1:屠龙者的战气
+E6B92E34:极致的战气
+DAEFBB27:变幻自如的战气
+4F135217:真红的战气
+D7F9BB88:冥暗的战气
+B064A634:异能之心
+D3B8C21F:终极钳蟹因子
+48A95B8D:金刚
+F71F8997:自动药水
+887AE0B0:-
+</DropDownList>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedWeapon_alloc</Address>
+          <Offsets>
+            <Offset>30</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>117</ID>
+              <Description>"等级"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+4</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>100</ID>
+          <Description>"保存修改(按完才能持久化存档)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+if syntaxcheck then return end
+
+AutoAssemble([[
+aobscanmodule(commitChanges_, $process, e8 * * * * 41 80 64 b7 ? ? )
+registersymbol(commitChanges_)
+]])
+
+function GetParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+function Main()
+  local commitChanges = GetParam(getAddress("commitChanges_"), 1);
+  local selectedWeapon_alloc = getAddress("selectedWeapon_alloc");
+  local p_selectedWeapon = readQword(selectedWeapon_alloc);
+  for o = 0x20, 0x38, 4 do
+    executeCodeEx(0, nil, commitChanges, {type=0,value=p_selectedWeapon+o});
+  end
+end
+
+[ENABLE]
+
+Main()
+
+[DISABLE]
+
+Main()
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>87</ID>
+      <Description>"当前选中因子 (装备/持有物页面列表加载)"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+
+aobscanmodule(selectedMateria,granblue_fantasy_relink.exe,48 ? ? ? 48 ? ? 74 ? 31 ? 81 ? ? ? ? ? 74 ?) // should be unique
+aobscanmodule(selectedMateria_eq,granblue_fantasy_relink.exe,48 ? ? ? 8b ? 49 ? ? ? ? ? ? 41 89 84 8d ? ? ? ? ) // should be unique
+alloc(selectedMateria_alloc,$1000,selectedMateria)
+
+label(code)
+label(return)
+
+label(code_eq)
+label(return_eq)
+
+selectedMateria_alloc:
+  db 00 00 00 00 00 00 00 00
+code:
+  mov rcx,[rdx+18]
+  mov [selectedMateria_alloc], rcx
+  test rcx,rcx
+  jmp return
+code_eq:
+  mov rdx,[rbp-38]
+  mov [selectedMateria_alloc], rdx
+  mov eax,[rdx]
+  jmp return_eq
+
+selectedMateria:
+  jmp code
+  nop 2
+return:
+
+selectedMateria_eq:
+  jmp code_eq
+  nop
+return_eq:
+
+registersymbol(selectedMateria_alloc)
+registersymbol(selectedMateria)
+registersymbol(selectedMateria_eq)
+
+[DISABLE]
+
+selectedMateria:
+  db 48 8B 4A 18 48 85 C9
+
+selectedMateria_eq:
+  db 48 8B 55 C8 8B 02
+
+dealloc(selectedMateria_alloc)
+
+unregistersymbol(selectedMateria_alloc)
+unregistersymbol(selectedMateria)
+unregistersymbol(selectedMateria_eq)
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>88</ID>
+          <Description>"技能1"</Description>
+          <DropDownList DisplayValueAsItem="1">50079A1C:攻击力
+F372F096:体力
+8D78A19B:暴击率
+CEB700EE:昏厥
+3F488339:背水
+2FC8FBFF:热血
+1C360C63:蓄力攻击
+3FEC5F80:协同攻击
+8D078597:投掷
+C0979A17:暴击伤害
+6B694D6D:弱点攻击
+A7A45F28:连击收招
+B360801D:集中炮火
+DC584F60:伤害上限
+F17850B9:连击加成
+71F11A9B:暴君
+C35B111B:蓄力会心
+4F1A3683:弱化状态特效
+A9D17F55:OVERDRIVE特效
+AC9674C1:破防特效
+E6CDBA9C:坚守
+A1A8E39D:霸体
+E69A4694:豪胆
+973B49AF:中毒抗性
+7C84A6B3:灼热抗性
+D54F8CA7:泥沙抗性
+FB572681:冰冻抗性
+3759A5B9:昏迷抗性
+2242921F:麻痹抗性
+50B453DD:能力封印抗性
+CFB48782:奥义封印抗性
+0AA20846:格挡性能
+3C2B57B0:格挡仇火
+8B3BF60C:躲避性能
+7C2E4D64:躲避仇火
+9389CC06:回复性能
+6085DA25:自愈
+7CCFF74F:HP吸收
+95F3FA86:自动复活
+318D12E9:迅捷能力
+05F2ECDC:怒涛
+B5FF9FD3:激昂
+24883AF3:药水携带数
+DC607D75:匿踪
+6018372B:挑衅
+F687C5EF:获得经验值
+C86F3082:获得金币
+EAE321EB:能力伤害
+E0ABFDFE:守护
+A2FA9685:缓速抗性
+B6E31F76:不动
+9702860F:灾祸抗性
+0053599E:蓄力强化
+1470F860:坚持
+3F2C482E:强化效果延长
+0EAD65E0:全弱化效果抗性
+09AA7DB5:凝神
+D2C8E10A:明镜止水
+29B292A8:抗争
+7EDD69D0:怒发冲冠
+8F502F0D:奋不顾身
+84078CB0:快速蓄力
+57E8A93F:因子强化
+CD030268:英勇神速
+A38510E2:英勇灵气
+3BFED918:守护者的决心
+F8496336:守护者的骄傲
+151E4674:舵手的指引
+A374FDF0:舵手的坚持
+B48EEF48:魔法师的心愿
+11AAE5F5:魔法师的伶利
+AA83F548:老兵的智慧
+921B6B0C:老兵的天眼
+23D0F67F:玫瑰早绽
+C2A4C7A9:玫瑰缤纷
+9A9DC170:圣骑士的剑辉
+522E2388:圣骑士的威光
+5463232F:古今无双的气概
+451D814C:古今无双的强者
+D908223D:幽幻之谊
+7351D602:幽幻之应
+29B07BEB:斩姬梦幻
+A63B89CD:斩姬武艺
+8CDF9382:白龙的誓约
+D1012D8C:白龙的荣耀
+2E65A774:勇士的信念
+16EFF868:勇士的毅力
+E60A735C:王者行进
+6FF05223:王者一心
+86CBCDC4:屠龙者的威猛
+05FA4599:屠龙者的才智
+EC3CF174:极致谋略
+AF513A9D:极致真理
+0CD6C625:变幻自如的迅刃
+A3B49220:变幻自如的妖剑士
+6EBFA176:真红烈焰
+F1D5DBD0:真红翔舞
+7440E869:冥暗刚刃
+CD124165:冥暗自若
+93A2093C:异能增长
+7AD0C010:异能战意
+0FBA47E8:强健甘露
+A4D6B880:修炼甘露
+CDEB73F6:幸运甘露
+1DC9D7E7:水牢抗性
+DD4A701E:异能耐受
+4BF2E191:攻击DOWN抗性
+66DE60B1:防御DOWN抗性
+082033CB:钳蟹的共鸣
+1B0D9897:钳蟹的报恩
+9AD8B5E6:7net
+40223C28:浩劫
+74AA75D6:刚健
+DC225C96:修罗
+4C588C27:属性克制转换
+5E422AE5:获得MSP
+AF794A87:躲避距离
+57AB5B10:追击
+82CE278D:身无长技
+1568E0E4:先发制人
+70395731:穷寇心
+CD18A77D:万能药
+333E5862:骰子剑
+A8A3163B:刀上舞
+EC1C6779:摇曳步
+DBE1D775:α秘纹
+8D2ADB6E:β秘纹
+5C862E13:γ秘纹
+77C809F5:剑圣的炼气
+9230E3F5:剑圣的闪刃
+7B4FC47A:剑圣的战气
+EF05EC4D:涯之七星
+E85FF8E0:魔眼的万箭
+8572B8AF:魔眼的凛翔
+81B293D9:魔眼的战气
+281214AB:涯之二王
+DADE14DC:英勇之心
+9AFDFA9E:守护者的战气
+D76F4D24:舵手的战气
+C00163B3:魔法师的战气
+0E42BE1B:老兵的战气
+8519AD4A:玫瑰的战气
+B85202BC:圣骑士的战气
+0F026CF0:古今无双的战气
+A339D642:幽幻的战气
+FDD1AD24:斩姬的战气
+6316CBEB:白龙的战气
+D8F66C1C:勇士的战气
+BA504607:王者的战气
+C7D379F1:屠龙者的战气
+E6B92E34:极致的战气
+DAEFBB27:变幻自如的战气
+4F135217:真红的战气
+D7F9BB88:冥暗的战气
+B064A634:异能之心
+D3B8C21F:终极钳蟹因子
+48A95B8D:金刚
+F71F8997:自动药水
+887AE0B0:-
+</DropDownList>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedMateria_alloc</Address>
+          <Offsets>
+            <Offset>0</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>6</ID>
+              <Description>"等级"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+4</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>89</ID>
+          <Description>"技能2"</Description>
+          <DropDownList DisplayValueAsItem="1">50079A1C:攻击力
+F372F096:体力
+8D78A19B:暴击率
+CEB700EE:昏厥
+3F488339:背水
+2FC8FBFF:热血
+1C360C63:蓄力攻击
+3FEC5F80:协同攻击
+8D078597:投掷
+C0979A17:暴击伤害
+6B694D6D:弱点攻击
+A7A45F28:连击收招
+B360801D:集中炮火
+DC584F60:伤害上限
+F17850B9:连击加成
+71F11A9B:暴君
+C35B111B:蓄力会心
+4F1A3683:弱化状态特效
+A9D17F55:OVERDRIVE特效
+AC9674C1:破防特效
+E6CDBA9C:坚守
+A1A8E39D:霸体
+E69A4694:豪胆
+973B49AF:中毒抗性
+7C84A6B3:灼热抗性
+D54F8CA7:泥沙抗性
+FB572681:冰冻抗性
+3759A5B9:昏迷抗性
+2242921F:麻痹抗性
+50B453DD:能力封印抗性
+CFB48782:奥义封印抗性
+0AA20846:格挡性能
+3C2B57B0:格挡仇火
+8B3BF60C:躲避性能
+7C2E4D64:躲避仇火
+9389CC06:回复性能
+6085DA25:自愈
+7CCFF74F:HP吸收
+95F3FA86:自动复活
+318D12E9:迅捷能力
+05F2ECDC:怒涛
+B5FF9FD3:激昂
+24883AF3:药水携带数
+DC607D75:匿踪
+6018372B:挑衅
+F687C5EF:获得经验值
+C86F3082:获得金币
+EAE321EB:能力伤害
+E0ABFDFE:守护
+A2FA9685:缓速抗性
+B6E31F76:不动
+9702860F:灾祸抗性
+0053599E:蓄力强化
+1470F860:坚持
+3F2C482E:强化效果延长
+0EAD65E0:全弱化效果抗性
+09AA7DB5:凝神
+D2C8E10A:明镜止水
+29B292A8:抗争
+7EDD69D0:怒发冲冠
+8F502F0D:奋不顾身
+84078CB0:快速蓄力
+57E8A93F:因子强化
+CD030268:英勇神速
+A38510E2:英勇灵气
+3BFED918:守护者的决心
+F8496336:守护者的骄傲
+151E4674:舵手的指引
+A374FDF0:舵手的坚持
+B48EEF48:魔法师的心愿
+11AAE5F5:魔法师的伶利
+AA83F548:老兵的智慧
+921B6B0C:老兵的天眼
+23D0F67F:玫瑰早绽
+C2A4C7A9:玫瑰缤纷
+9A9DC170:圣骑士的剑辉
+522E2388:圣骑士的威光
+5463232F:古今无双的气概
+451D814C:古今无双的强者
+D908223D:幽幻之谊
+7351D602:幽幻之应
+29B07BEB:斩姬梦幻
+A63B89CD:斩姬武艺
+8CDF9382:白龙的誓约
+D1012D8C:白龙的荣耀
+2E65A774:勇士的信念
+16EFF868:勇士的毅力
+E60A735C:王者行进
+6FF05223:王者一心
+86CBCDC4:屠龙者的威猛
+05FA4599:屠龙者的才智
+EC3CF174:极致谋略
+AF513A9D:极致真理
+0CD6C625:变幻自如的迅刃
+A3B49220:变幻自如的妖剑士
+6EBFA176:真红烈焰
+F1D5DBD0:真红翔舞
+7440E869:冥暗刚刃
+CD124165:冥暗自若
+93A2093C:异能增长
+7AD0C010:异能战意
+0FBA47E8:强健甘露
+A4D6B880:修炼甘露
+CDEB73F6:幸运甘露
+1DC9D7E7:水牢抗性
+DD4A701E:异能耐受
+4BF2E191:攻击DOWN抗性
+66DE60B1:防御DOWN抗性
+082033CB:钳蟹的共鸣
+1B0D9897:钳蟹的报恩
+9AD8B5E6:7net
+40223C28:浩劫
+74AA75D6:刚健
+DC225C96:修罗
+4C588C27:属性克制转换
+5E422AE5:获得MSP
+AF794A87:躲避距离
+57AB5B10:追击
+82CE278D:身无长技
+1568E0E4:先发制人
+70395731:穷寇心
+CD18A77D:万能药
+333E5862:骰子剑
+A8A3163B:刀上舞
+EC1C6779:摇曳步
+DBE1D775:α秘纹
+8D2ADB6E:β秘纹
+5C862E13:γ秘纹
+77C809F5:剑圣的炼气
+9230E3F5:剑圣的闪刃
+7B4FC47A:剑圣的战气
+EF05EC4D:涯之七星
+E85FF8E0:魔眼的万箭
+8572B8AF:魔眼的凛翔
+81B293D9:魔眼的战气
+281214AB:涯之二王
+DADE14DC:英勇之心
+9AFDFA9E:守护者的战气
+D76F4D24:舵手的战气
+C00163B3:魔法师的战气
+0E42BE1B:老兵的战气
+8519AD4A:玫瑰的战气
+B85202BC:圣骑士的战气
+0F026CF0:古今无双的战气
+A339D642:幽幻的战气
+FDD1AD24:斩姬的战气
+6316CBEB:白龙的战气
+D8F66C1C:勇士的战气
+BA504607:王者的战气
+C7D379F1:屠龙者的战气
+E6B92E34:极致的战气
+DAEFBB27:变幻自如的战气
+4F135217:真红的战气
+D7F9BB88:冥暗的战气
+B064A634:异能之心
+D3B8C21F:终极钳蟹因子
+48A95B8D:金刚
+F71F8997:自动药水
+887AE0B0:-
+</DropDownList>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedMateria_alloc</Address>
+          <Offsets>
+            <Offset>8</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>112</ID>
+              <Description>"等级"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+4</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>91</ID>
+          <Description>"等级 (同时修改全部技能等级)"</Description>
+          <Options moRecursiveSetValue="1" moAlwaysHideChildren="1"/>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedMateria_alloc</Address>
+          <Offsets>
+            <Offset>18</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>113</ID>
+              <Description>"等级1"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>selectedMateria_alloc</Address>
+              <Offsets>
+                <Offset>4</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114</ID>
+              <Description>"等级2"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>selectedMateria_alloc</Address>
+              <Offsets>
+                <Offset>c</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>92</ID>
+          <Description>"保存修改(按完才能持久化存档)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+if syntaxcheck then return end
+
+AutoAssemble([[
+aobscanmodule(commitChanges_, $process, e8 * * * * 41 80 64 b7 ? ? )
+registersymbol(commitChanges_)
+]])
+
+function GetParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+function Main()
+  local commitChanges = GetParam(getAddress("commitChanges_"), 1);
+  local selectedMateria_alloc = getAddress("selectedMateria_alloc");
+  local p_selectedMateria = readQword(selectedMateria_alloc);
+  for o = 0, 25, 4 do
+    executeCodeEx(0, nil, commitChanges, {type=0,value=p_selectedMateria+o});
+  end
+end
+
+[ENABLE]
+
+Main()
+
+[DISABLE]
+
+Main()
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>150</ID>
+      <Description>"上限突破 (未曾突破无效) (突破界面加载)"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+aobscanmodule(selectedCharEx,granblue_fantasy_relink.exe,4c ? ? ? 4d ? ? 0f 84 ? ? ? ? 49 ? ? ? ? ? ? 0f 84 ? ? ? ? 41 ? ? ) // should be unique
+alloc(selectedCharEx_alloc,$1000,selectedCharEx)
+
+label(code)
+label(return)
+
+selectedCharEx_alloc:
+  db 00 00 00 00 00 00 00 00
+code:
+  mov r8,[rbp-40]
+  mov [selectedCharEx_alloc], r8
+  test r8,r8
+  jmp return
+
+selectedCharEx:
+  jmp code
+  nop 2
+return:
+
+registersymbol(selectedCharEx_alloc)
+registersymbol(selectedCharEx)
+
+[DISABLE]
+
+selectedCharEx:
+  db 4C 8B 45 C0 4D 85 C0
+
+dealloc(selectedCharEx_alloc)
+
+unregistersymbol(selectedCharEx_alloc)
+unregistersymbol(selectedCharEx)
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>151</ID>
+          <Description>"技能1"</Description>
+          <DropDownList DisplayValueAsItem="1">52A207B5:HP
+54929589:HP回复上限
+6CB38EF3:昏厥值
+C4925BD7:攻击力
+45C65767:暴击率
+43B7581D:普通攻击上限
+9A97C049:能力伤害
+9C555433:能力伤害上限
+4E42646B:奥义伤害
+4A4C093D:奥义伤害上限
+68B39018:奥义连锁伤害
+</DropDownList>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedCharEx_alloc</Address>
+          <Offsets>
+            <Offset>0</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>152</ID>
+              <Description>"等级"</Description>
+              <DropDownList DisplayValueAsItem="1">00000001:LV1
+00000002:LV2
+00000004:LV3
+00000008:LV4
+00000010:LV5
+00000020:LV6
+00000040:LV7
+00000080:LV8
+00000100:LV9
+00000200:LV10
+</DropDownList>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+4</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>153</ID>
+              <Description>""</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+8</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>154</ID>
+              <Description>"数值"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>+c</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>155</ID>
+          <Description>"技能2"</Description>
+          <DropDownList DisplayValueAsItem="1">52A207B5:HP
+54929589:HP回复上限
+6CB38EF3:昏厥值
+C4925BD7:攻击力
+45C65767:暴击率
+43B7581D:普通攻击上限
+9A97C049:能力伤害
+9C555433:能力伤害上限
+4E42646B:奥义伤害
+4A4C093D:奥义伤害上限
+68B39018:奥义连锁伤害
+</DropDownList>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedCharEx_alloc</Address>
+          <Offsets>
+            <Offset>10</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>156</ID>
+              <Description>"等级"</Description>
+              <DropDownList DisplayValueAsItem="1">00000001:LV1
+00000002:LV2
+00000004:LV3
+00000008:LV4
+00000010:LV5
+00000020:LV6
+00000040:LV7
+00000080:LV8
+00000100:LV9
+00000200:LV10
+</DropDownList>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+4</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>157</ID>
+              <Description>""</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+8</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>158</ID>
+              <Description>"数值"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>+c</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>159</ID>
+          <Description>"技能3"</Description>
+          <DropDownList DisplayValueAsItem="1">52A207B5:HP
+54929589:HP回复上限
+6CB38EF3:昏厥值
+C4925BD7:攻击力
+45C65767:暴击率
+43B7581D:普通攻击上限
+9A97C049:能力伤害
+9C555433:能力伤害上限
+4E42646B:奥义伤害
+4A4C093D:奥义伤害上限
+68B39018:奥义连锁伤害
+</DropDownList>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedCharEx_alloc</Address>
+          <Offsets>
+            <Offset>20</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>160</ID>
+              <Description>"等级"</Description>
+              <DropDownList DisplayValueAsItem="1">00000001:LV1
+00000002:LV2
+00000004:LV3
+00000008:LV4
+00000010:LV5
+00000020:LV6
+00000040:LV7
+00000080:LV8
+00000100:LV9
+00000200:LV10
+</DropDownList>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+4</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>161</ID>
+              <Description>""</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+8</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>162</ID>
+              <Description>"数值"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>+c</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>163</ID>
+          <Description>"技能4"</Description>
+          <DropDownList DisplayValueAsItem="1">52A207B5:HP
+54929589:HP回复上限
+6CB38EF3:昏厥值
+C4925BD7:攻击力
+45C65767:暴击率
+43B7581D:普通攻击上限
+9A97C049:能力伤害
+9C555433:能力伤害上限
+4E42646B:奥义伤害
+4A4C093D:奥义伤害上限
+68B39018:奥义连锁伤害
+</DropDownList>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>selectedCharEx_alloc</Address>
+          <Offsets>
+            <Offset>30</Offset>
+          </Offsets>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>164</ID>
+              <Description>"等级"</Description>
+              <DropDownList DisplayValueAsItem="1">00000001:LV1
+00000002:LV2
+00000004:LV3
+00000008:LV4
+00000010:LV5
+00000020:LV6
+00000040:LV7
+00000080:LV8
+00000100:LV9
+00000200:LV10
+</DropDownList>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+4</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>165</ID>
+              <Description>""</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+8</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>166</ID>
+              <Description>"数值"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>+c</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>167</ID>
+          <Description>"保存修改(按完才能持久化存档)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+if syntaxcheck then return end
+
+AutoAssemble([[
+aobscanmodule(commitChanges_, $process, e8 * * * * 41 80 64 b7 ? ? )
+registersymbol(commitChanges_)
+]])
+
+function GetParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+function Main()
+  local commitChanges = GetParam(getAddress("commitChanges_"), 1);
+  local selectedCharEx_alloc = getAddress("selectedCharEx_alloc");
+  local p_selectedCharEx = readQword(selectedCharEx_alloc);
+  for o = 0x00, 0x40, 4 do
+    executeCodeEx(0, nil, commitChanges, {type=0,value=p_selectedCharEx+o});
+  end
+end
+
+[ENABLE]
+
+Main()
+
+[DISABLE]
+
+Main()
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>168</ID>
+      <Description>"talent_page"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+if syntaxcheck then return end
+
+
+[ENABLE]
+
+AutoAssemble([[
+aobscanmodule(read_talent_page_char_id_code,granblue_fantasy_relink.exe,48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? ? ? ? ? 44 ? ? ? ? ? ? 41 ? ? ? ? ? ?)
+registersymbol(read_talent_page_char_id_code)
+]])
+
+function GetParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+read_talent_page_char_id_module = GetParam(getAddress("read_talent_page_char_id_code"),3)
+read_talent_page_type_offset = readInteger(getAddress("read_talent_page_char_id_code")+ 17, true)
+read_talent_page_char_id_offset = readInteger(getAddress("read_talent_page_char_id_code")+24, true)
+registerSymbol("read_talent_page_char_id_module",read_talent_page_char_id_module)
+registerSymbol("read_talent_page_type_offset",read_talent_page_type_offset)
+registerSymbol("read_talent_page_char_id_offset",read_talent_page_char_id_offset)
+
+[DISABLE]
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>169</ID>
+          <Description>"char_id"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>read_talent_page_char_id_module</Address>
+          <Offsets>
+            <Offset>read_talent_page_char_id_offset</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>170</ID>
+          <Description>"type"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>read_talent_page_char_id_module</Address>
+          <Offsets>
+            <Offset>read_talent_page_type_offset</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols>
+    <SymbolEntry>
+      <Name>read_talent_page_char_id_module</Name>
+      <Address>7FF6314B0160</Address>
+    </SymbolEntry>
+    <SymbolEntry>
+      <Name>read_talent_page_type_offset</Name>
+      <Address>A3C</Address>
+    </SymbolEntry>
+    <SymbolEntry>
+      <Name>read_talent_page_char_id_offset</Name>
+      <Address>478</Address>
+    </SymbolEntry>
+    <SymbolEntry>
+      <Name>can_use_assist</Name>
+      <Address>7FF7CAC90600</Address>
+    </SymbolEntry>
+  </UserdefinedSymbols>
+</CheatTable>

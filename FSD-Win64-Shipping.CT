@@ -1,0 +1,1803 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('FSD-Win64-Shipping.exe')
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>112894</ID>
+          <Description>"Bosco - Cheats"</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>113775</ID>
+              <Description>"Bosco INF Rockets"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(BoscoInfRockets_At,FSD-Win64-Shipping.exe,ff 8b ? ? ? ? 48 ? ? ? ? ? ? 8b ? ? ? ? ? 48 ? ? ? 89 45) // should be unique
+alloc(BoscoInfRockets_Alloc,$1000,BoscoInfRockets_At)
+label(BoscoInfRockets_Backup)
+
+BoscoInfRockets_Alloc:
+BoscoInfRockets_Backup:
+  readmem(BoscoInfRockets_At,6)
+
+BoscoInfRockets_At:
+  nop 6
+
+registersymbol(BoscoInfRockets_At,BoscoInfRockets_Alloc,BoscoInfRockets_Backup)
+
+[DISABLE]
+
+BoscoInfRockets_At:
+  readmem(BoscoInfRockets_Backup,6)
+
+dealloc(BoscoInfRockets_Alloc)
+unregistersymbol(BoscoInfRockets_At,BoscoInfRockets_Alloc,BoscoInfRockets_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>112893</ID>
+              <Description>"INF Bosco Revive"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(InfBoscoRevive_At,FSD-Win64-Shipping.exe,89 81 ? ? ? ? 48 ? ? ? ? ? ? 89 44 24 ? e8 ? ? ? ? b0) // should be unique
+alloc(InfBoscoRevive_Alloc,$1000,InfBoscoRevive_At)
+label(InfBoscoRevive_Backup)
+
+InfBoscoRevive_Alloc:
+InfBoscoRevive_Backup:
+  readmem(InfBoscoRevive_At,6)
+
+InfBoscoRevive_At:
+  nop 6
+
+registersymbol(InfBoscoRevive_At,InfBoscoRevive_Alloc,InfBoscoRevive_Backup)
+
+[DISABLE]
+
+InfBoscoRevive_At:
+  readmem(InfBoscoRevive_Backup,6)
+
+dealloc(InfBoscoRevive_Alloc)
+unregistersymbol(InfBoscoRevive_At,InfBoscoRevive_Alloc,InfBoscoRevive_Backup)
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>113653</ID>
+          <Description>"Mission specific"</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>113756</ID>
+              <Description>"Untlimited Oxygen"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(UntlimitedOxygen_At,FSD-Win64-Shipping.exe,f3 0f 11 83 ? ? ? ? 0f ? ? ? ? ? ? 72 ?)
+alloc(UntlimitedOxygen_Alloc,$1000,UntlimitedOxygen_At)
+label(UntlimitedOxygen_Backup)
+
+UntlimitedOxygen_Alloc:
+UntlimitedOxygen_Backup:
+  readmem(UntlimitedOxygen_At,8)
+
+UntlimitedOxygen_At:
+  nop 8
+
+registersymbol(UntlimitedOxygen_At,UntlimitedOxygen_Alloc,UntlimitedOxygen_Backup)
+
+[DISABLE]
+
+UntlimitedOxygen_At:
+  readmem(UntlimitedOxygen_Backup,8)
+
+dealloc(UntlimitedOxygen_Alloc)
+unregistersymbol(UntlimitedOxygen_At,UntlimitedOxygen_Alloc,UntlimitedOxygen_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>113761</ID>
+              <Description>"No Radiation"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+
+aobscanmodule(NoRadiation_At,FSD-Win64-Shipping.exe,f3 0f 11 b3 ? ? ? ? 7a ? 75 ?)
+alloc(NoRadiation_Alloc,$1000,NoRadiation_At)
+label(NoRadiation_Backup)
+
+NoRadiation_Alloc:
+NoRadiation_Backup:
+  readmem(NoRadiation_At,8)
+
+NoRadiation_At:
+  nop 8
+
+registersymbol(NoRadiation_At,NoRadiation_Alloc,NoRadiation_Backup)
+
+[DISABLE]
+
+NoRadiation_At:
+  readmem(NoRadiation_Backup,8)
+
+dealloc(NoRadiation_Alloc)
+unregistersymbol(NoRadiation_At,NoRadiation_Alloc,NoRadiation_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114066</ID>
+              <Description>"Instant Finish Egg/Aquarq (Depost one to use)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(InstantEgg_At,FSD-Win64-Shipping.exe,41 89 90 ? ? ? ? 48 ? ? ? ? e8 ? ? ? ? )
+alloc(InstantEgg_Alloc,$1000,InstantEgg_At)
+label(InstantEgg_Backup)
+label(code)
+label(return)
+
+InstantEgg_Alloc:
+InstantEgg_Backup:
+  readmem(InstantEgg_At,7)
+code:
+  mov edx,(int)10
+  readmem(InstantEgg_At,7)
+  jmp return
+
+InstantEgg_At:
+  jmp code
+  nop 2
+return:
+
+registersymbol(InstantEgg_At,InstantEgg_Alloc,InstantEgg_Backup)
+
+[DISABLE]
+InstantEgg_At:
+  readmem(InstantEgg_Backup,7)
+
+dealloc(InstantEgg_Alloc)
+unregistersymbol(InstantEgg_At,InstantEgg_Alloc,InstantEgg_Backup)
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>438</ID>
+          <Description>"Class specific cheats"</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>349</ID>
+              <Description>"Engineer"</Description>
+              <Options moHideChildren="1"/>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>113865</ID>
+                  <Description>"Turret Uses No Ammo (Host Required) (Effects all engineers in the match)"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+aobscanmodule(TurretUsesNoAmmo_At,FSD-Win64-Shipping.exe,89 87 ? ? ? ? 3b ? 74 ? 48 89 5c 24)
+alloc(TurretUsesNoAmmo_Alloc,$1000,TurretUsesNoAmmo_At)
+label(TurretUsesNoAmmo_Backup)
+label(code)
+label(return)
+
+TurretUsesNoAmmo_Alloc:
+TurretUsesNoAmmo_Backup:
+  readmem(TurretUsesNoAmmo_At,6)
+code:
+  mov eax,(int)69420
+  readmem(TurretUsesNoAmmo_At,6)
+  jmp return
+
+TurretUsesNoAmmo_At:
+  jmp code
+  nop 1
+return:
+
+registersymbol(TurretUsesNoAmmo_At,TurretUsesNoAmmo_Alloc,TurretUsesNoAmmo_Backup)
+
+[DISABLE]
+TurretUsesNoAmmo_At:
+  readmem(TurretUsesNoAmmo_Backup,6)
+
+dealloc(TurretUsesNoAmmo_Alloc)
+unregistersymbol(TurretUsesNoAmmo_At,TurretUsesNoAmmo_Alloc,TurretUsesNoAmmo_Backup)
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114056</ID>
+                  <Description>"INF Turret Placement (Host Required)"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(InfTurretPlacement_At,0)' end
+return ('define(InfTurretPlacement_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe", "0f ? ? ? 48 ? ? ? ? ? ? ? e8 ? ? ? ? 48 ? ? ? ? ? ? 8d ? ? 89 87")+0x1b)
+{$asm}
+alloc(InfTurretPlacement_Alloc,$1000,InfTurretPlacement_At)
+label(InfTurretPlacement_Backup)
+
+InfTurretPlacement_Alloc:
+InfTurretPlacement_Backup:
+  readmem(InfTurretPlacement_At,6)
+
+InfTurretPlacement_At:
+  nop 6
+
+registersymbol(InfTurretPlacement_At,InfTurretPlacement_Alloc,InfTurretPlacement_Backup)
+
+[DISABLE]
+InfTurretPlacement_At:
+  readmem(InfTurretPlacement_Backup,6)
+
+dealloc(InfTurretPlacement_Alloc)
+unregistersymbol(InfTurretPlacement_At,InfTurretPlacement_Alloc,InfTurretPlacement_Backup)
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114046</ID>
+                  <Description>"Lok1 Unlimited Targeting"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(LOK1UpdateTargetNum_At,0)' end
+return ('define(LOK1UpdateTargetNum_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe",
+    "89 8e ? ? ? ? 48 ? ? ? ? ? ? 89 8d ? ? ? ? "
+))
+{$asm}
+alloc(LOK1UpdateTargetNum_Alloc,$1000,LOK1UpdateTargetNum_At)
+label(LOK1UpdateTargetNum_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+LOK1UpdateTargetNum_Alloc:
+LOK1UpdateTargetNum_Backup:
+  readmem(LOK1UpdateTargetNum_At,6)
+code:
+  mov ecx, (float)inf
+orig:
+  readmem(LOK1UpdateTargetNum_At,6)
+  jmp return
+
+LOK1UpdateTargetNum_At:
+  jmp code
+  nop 1
+return:
+
+registersymbol(LOK1UpdateTargetNum_At,LOK1UpdateTargetNum_Alloc,LOK1UpdateTargetNum_Backup)
+
+[DISABLE]
+LOK1UpdateTargetNum_At:
+  readmem(LOK1UpdateTargetNum_Backup,6)
+
+dealloc(LOK1UpdateTargetNum_Alloc)
+unregistersymbol(LOK1UpdateTargetNum_At,LOK1UpdateTargetNum_Alloc,LOK1UpdateTargetNum_Backup)
+
+</AssemblerScript>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>452</ID>
+              <Description>"Gunner"</Description>
+              <Options moHideChildren="1"/>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>114023</ID>
+                  <Description>"INF Minigun Ammo"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+aobscanmodule(InfMinigunAmmo_At,FSD-Win64-Shipping.exe, 89 86 ? ? ? ? 89 45 ? e8 ? ? ? ? 8b)
+
+alloc(InfMinigunAmmo_Alloc,$1000,InfMinigunAmmo_At)
+label(InfMinigunAmmo_Backup)
+
+label(code)
+label(orig)
+label(return)
+label(skip_orig)
+
+
+InfMinigunAmmo_Alloc:
+InfMinigunAmmo_Backup:
+  readmem(InfMinigunAmmo_At,6)
+code:
+  cmp eax, (int)5
+  jle skip_orig
+orig:
+  readmem(InfMinigunAmmo_At,6)
+skip_orig:
+  jmp return
+
+InfMinigunAmmo_At:
+  jmp code
+  nop 1
+return:
+
+registersymbol(InfMinigunAmmo_At,InfMinigunAmmo_Alloc,InfMinigunAmmo_Backup)
+
+[DISABLE]
+InfMinigunAmmo_At:
+  readmem(InfMinigunAmmo_Backup,6)
+
+dealloc(InfMinigunAmmo_Alloc)
+unregistersymbol(InfMinigunAmmo_At,InfMinigunAmmo_Alloc,InfMinigunAmmo_Backup)
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114013</ID>
+                  <Description>"Fast Ziplining"</Description>
+                  <Options moHideChildren="1"/>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+aobscanmodule(FastZiplining_At,FSD-Win64-Shipping.exe,f3 ? ? ? ? ? ? ? 74 ? e8 ? ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 0f)
+alloc(FastZiplining_Alloc,$1000,FastZiplining_At)
+label(FastZiplining_Backup)
+
+label(code)
+label(orig)
+label(return)
+label(FastZiplining_Val)
+
+FastZiplining_Alloc:
+FastZiplining_Val:
+  dd (float)1000
+FastZiplining_Backup:
+  readmem(FastZiplining_At,8)
+code:
+orig:
+  movss xmm6, [FastZiplining_Val]
+  jmp return
+
+FastZiplining_At:
+  jmp code
+  nop 3
+return:
+
+registersymbol(FastZiplining_At,FastZiplining_Alloc,FastZiplining_Backup,FastZiplining_Val)
+
+[DISABLE]
+FastZiplining_At:
+  readmem(FastZiplining_Backup,8)
+
+dealloc(FastZiplining_Alloc)
+unregistersymbol(FastZiplining_At,FastZiplining_Alloc,FastZiplining_Backup,FastZiplining_Val)
+
+
+</AssemblerScript>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>114078</ID>
+                      <Description>"FastZiplining_Val"</Description>
+                      <ShowAsSigned>0</ShowAsSigned>
+                      <VariableType>Float</VariableType>
+                      <Address>FastZiplining_Val</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114026</ID>
+                  <Description>"Zipline angle and length"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>// Zipline angle and length
+// Lolbus420
+
+[ENABLE]
+aobscanmodule(Zip_LA,FSD-Win64-Shipping.exe,F3 0F 10 86 80 07 00 00 f3 ? ? ? ? ? ? ? f3 ? ? ? f3 ? ? ? f3 ? ? ? f3 ? ? ? ? ? f3 ? ? ? f3 ? ? ? ? ? f3 ? ? ? f3 0f 11 44 24) // should be unique
+alloc(newmem,$1000,Zip_LA)
+
+label(code)
+label(return)
+
+newmem:
+mov [rsi+00000780],(float)90000                  //originalval: 5000
+mov [rsi+0000078C],(float)90                     //originalval: 32
+code:
+  movss xmm0,[rsi+00000780]
+  jmp return
+
+Zip_LA:
+  jmp newmem
+  nop 3
+return:
+registersymbol(Zip_LA)
+
+[DISABLE]
+
+Zip_LA:
+  db F3 0F 10 86 80 07 00 00
+
+unregistersymbol(Zip_LA)
+dealloc(newmem)
+</AssemblerScript>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>329</ID>
+              <Description>"Driller                     "</Description>
+              <Options moHideChildren="1"/>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>113900</ID>
+                  <Description>"INF Drill"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+aobscanmodule(InfDrill_At,FSD-Win64-Shipping.exe, f3 ? ? ? ? ? ? ? f3 44 0f 11 86 ? ? ? ? f3 0f 11 8e ? ? ? ? )
+
+alloc(InfDrill_Alloc,$1000,InfDrill_At)
+label(InfDrill_Backup)
+
+InfDrill_Alloc:
+InfDrill_Backup:
+  readmem(InfDrill_At,8)
+
+InfDrill_At:
+  nop 8
+
+registersymbol(InfDrill_At,InfDrill_Alloc,InfDrill_Backup)
+
+[DISABLE]
+InfDrill_At:
+  readmem(InfDrill_Backup,8)
+
+dealloc(InfDrill_Alloc)
+unregistersymbol(InfDrill_At,InfDrill_Alloc,InfDrill_Backup)
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>113901</ID>
+                  <Description>"No Fuel Use Per Melee"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(DrillFuelUse_At,0)' end
+return ('define(DrillFuelUse_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe",
+    "f3 0f 11 86 ? ? ? ? 41 ? ? ? f3 ? ? ? ? ? ? ? f3 ? ? ? ? ? ? ? f3 0f 11 8e ? ? ? ?"
+))
+{$asm}
+alloc(DrillFuelUse_Alloc,$1000,DrillFuelUse_At)
+label(DrillFuelUse_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+DrillFuelUse_Alloc:
+DrillFuelUse_Backup:
+  readmem(DrillFuelUse_At,8)
+code:
+orig:
+  readmem(DrillFuelUse_At,8)
+  jmp return
+
+DrillFuelUse_At:
+  nop 8
+return:
+
+registersymbol(DrillFuelUse_At,DrillFuelUse_Alloc,DrillFuelUse_Backup)
+
+[DISABLE]
+DrillFuelUse_At:
+  readmem(DrillFuelUse_Backup,8)
+
+dealloc(DrillFuelUse_Alloc)
+unregistersymbol(DrillFuelUse_At,DrillFuelUse_Alloc,DrillFuelUse_Backup)
+
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>113921</ID>
+                  <Description>"Enable Ice Spear"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(EnableIceSpear_At,0)' end
+error("no eff")
+return ('define(EnableIceSpear_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe",
+    "0f 84 ? ? ? ? 80 b9 ? ? ? ? ? 0f 85 ? ? ? ? 8b ? ? ? ? ? 39 81"
+))
+{$asm}
+alloc(EnableIceSpear_Alloc,$1000,EnableIceSpear_At)
+label(EnableIceSpear_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+EnableIceSpear_Alloc:
+EnableIceSpear_Backup:
+  readmem(EnableIceSpear_At,6)
+code:
+orig:
+  readmem(EnableIceSpear_At,6)
+  jmp return
+
+EnableIceSpear_At:
+  nop 6
+return:
+
+registersymbol(EnableIceSpear_At,EnableIceSpear_Alloc,EnableIceSpear_Backup)
+
+[DISABLE]
+EnableIceSpear_At:
+  readmem(EnableIceSpear_Backup,6)
+
+dealloc(EnableIceSpear_Alloc)
+unregistersymbol(EnableIceSpear_At,EnableIceSpear_Alloc,EnableIceSpear_Backup)
+
+
+
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>34378</ID>
+                  <Description>"No Pressurized Projectile Delay"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(PressurizedProjectileDelay_At,0)' end
+error("no eff")
+return ('define(PressurizedProjectileDelay_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe",
+    "f3 ? ? ? ? ? ? ? 48 ? ? ? ? ? ? 33 ? 48 89 44 24 ? 48 ? ? 89 6c 24 ?"
+))
+{$asm}
+alloc(PressurizedProjectileDelay_Alloc,$1000,PressurizedProjectileDelay_At)
+label(PressurizedProjectileDelay_Backup)
+
+label(code)
+label(orig)
+label(return)
+label(edit)
+label(PressurizedProjectileDelay_ValBackup)
+
+PressurizedProjectileDelay_Alloc:
+PressurizedProjectileDelay_Backup:
+  readmem(PressurizedProjectileDelay_At,8)
+PressurizedProjectileDelay_ValBackup:
+  dq 0
+  dd 0
+code:
+  push rax
+  mov rax, [PressurizedProjectileDelay_ValBackup]
+  cmp rax, 0
+  je edit
+  cmp rbx, [PressurizedProjectileDelay_ValBackup]
+  je orig
+edit:
+  mov [PressurizedProjectileDelay_ValBackup], rbx
+  mov eax, [rbx+784]
+  mov [PressurizedProjectileDelay_ValBackup+8], eax
+  mov [rbx+784], (float)0.01
+orig:
+  pop rax
+  readmem(PressurizedProjectileDelay_At,8)
+  jmp return
+
+PressurizedProjectileDelay_At:
+  jmp code
+  nop 3
+return:
+
+registersymbol(PressurizedProjectileDelay_At,PressurizedProjectileDelay_Alloc,PressurizedProjectileDelay_Backup,PressurizedProjectileDelay_ValBackup)
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local function restore()
+  if getAddress("[PressurizedProjectileDelay_ValBackup]") ~= 0 then
+    writeFloat("[PressurizedProjectileDelay_ValBackup]+784", readFloat("[PressurizedProjectileDelay_ValBackup+6]"))
+  end
+end
+restore()
+{$asm}
+
+PressurizedProjectileDelay_At:
+  readmem(PressurizedProjectileDelay_Backup,8)
+
+dealloc(PressurizedProjectileDelay_Alloc)
+unregistersymbol(PressurizedProjectileDelay_At,PressurizedProjectileDelay_Alloc,PressurizedProjectileDelay_Backup,PressurizedProjectileDelay_ValBackup)
+
+
+
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>113931</ID>
+                  <Description>"EPC No Overheat"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(EPCOverHeat_At_1,0)\ndefine(EPCOverHeat_At_2,0)' end
+return ('define(EPCOverHeat_At_1,%08X)\ndefine(EPCOverHeat_At_2,%08X)'):format(
+aobScanModule(nil,"FSD-Win64-Shipping.exe","f3 0f 11 8b ? ? ? ? 72 ? b2 ?"),
+aobScanModule(nil,"FSD-Win64-Shipping.exe","f3 0f 11 83 ? ? ? ? 0f 82 ? ? ? ? 48 ? ? b2 ?")
+)
+{$asm}
+alloc(EPCOverHeat_Alloc,$1000)
+label(EPCOverHeat_Backup_1)
+label(EPCOverHeat_Backup_2)
+
+EPCOverHeat_Alloc:
+EPCOverHeat_Backup_1:
+  readmem(EPCOverHeat_At_1,8)
+EPCOverHeat_Backup_2:
+  readmem(EPCOverHeat_At_2,8)
+
+EPCOverHeat_At_1:
+  nop 8
+EPCOverHeat_At_2:
+  nop 8
+
+registersymbol(EPCOverHeat_At_1,EPCOverHeat_At_2,EPCOverHeat_Alloc,EPCOverHeat_Backup_1,EPCOverHeat_Backup_2)
+
+[DISABLE]
+EPCOverHeat_At_1:
+  readmem(EPCOverHeat_Backup_1,8)
+EPCOverHeat_At_2:
+  readmem(EPCOverHeat_Backup_2,8)
+
+dealloc(EPCOverHeat_Alloc)
+unregistersymbol(EPCOverHeat_At_1,EPCOverHeat_At_2,EPCOverHeat_Alloc,EPCOverHeat_Backup_1,EPCOverHeat_Backup_2)
+
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114079</ID>
+                  <Description>"CryoCannonEffect"</Description>
+                  <Options moHideChildren="1"/>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(CryoCannonEffect_At,0)' end
+return ('define(CryoCannonEffect_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe",
+    "48 ? ? e8 ? ? ? ? 4c ? ? 48 ? ? f3 ? ? ? 30 0f ? ? ff 93 ? ? ? ? 0f ? ?"
+)+0xe)
+{$asm}
+alloc(CryoCannonEffect_Alloc,$1000,CryoCannonEffect_At)
+label(CryoCannonEffect_Backup)
+
+label(code)
+label(orig)
+label(return)
+label(CryoCannonEffect_ValAt)
+label(CryoCannonEffect_Prefered)
+
+CryoCannonEffect_Alloc:
+CryoCannonEffect_Prefered:
+  dd (float)-1
+CryoCannonEffect_ValAt:
+  dq 0
+CryoCannonEffect_Backup:
+  readmem(CryoCannonEffect_At,5)
+code:
+  push rbx
+  lea rbx, [rax+30]
+  mov [CryoCannonEffect_ValAt], rbx
+  mov ebx, [CryoCannonEffect_Prefered]
+  mov [rax+30], ebx
+  pop rbx
+orig:
+  readmem(CryoCannonEffect_At,5)
+  jmp return
+
+CryoCannonEffect_At:
+  jmp code
+return:
+
+registersymbol(CryoCannonEffect_At,CryoCannonEffect_Alloc,CryoCannonEffect_Backup,CryoCannonEffect_ValAt,CryoCannonEffect_Prefered)
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local function restore()
+  if getAddress("[CryoCannonEffect_ValAt]") ~= 0 then
+    writeFloat("[CryoCannonEffect_ValAt]", -1)
+  end
+end
+restore()
+{$asm}
+
+CryoCannonEffect_At:
+  readmem(CryoCannonEffect_Backup,5)
+
+dealloc(CryoCannonEffect_Alloc)
+unregistersymbol(CryoCannonEffect_At,CryoCannonEffect_Alloc,CryoCannonEffect_Backup,CryoCannonEffect_ValAt,CryoCannonEffect_Prefered)
+
+</AssemblerScript>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>114080</ID>
+                      <Description>"value"</Description>
+                      <DropDownList DescriptionOnly="1" DisplayValueAsItem="1">-1:original
+-999:instant freeze
+999:instant fire
+</DropDownList>
+                      <ShowAsSigned>0</ShowAsSigned>
+                      <VariableType>Float</VariableType>
+                      <Address>CryoCannonEffect_Prefered</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>559</ID>
+              <Description>"Scout                           "</Description>
+              <Options moHideChildren="1"/>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>113285</ID>
+                  <Description>"Spiderman - Hack"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+aobscanmodule(_Spiderman_At,FSD-Win64-Shipping.exe, 8b ? ? ? ? ? 89 81 ? ? ? ? 88 91 ? ? ? ? c3)
+Define(Spiderman_At, _Spiderman_At+6)
+
+alloc(Spiderman_Alloc,$1000,Spiderman_At)
+label(Spiderman_Backup)
+
+Spiderman_Alloc:
+Spiderman_Backup:
+  readmem(Spiderman_At,6)
+
+Spiderman_At:
+  nop 6
+
+registersymbol(Spiderman_At,Spiderman_Alloc,Spiderman_Backup)
+
+[DISABLE]
+Spiderman_At:
+  readmem(Spiderman_Backup,6)
+
+dealloc(Spiderman_Alloc)
+unregistersymbol(Spiderman_At,Spiderman_Alloc,Spiderman_Backup)
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114025</ID>
+                  <Description>"Scout Hook Lenght"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(HookLengthCheck_At,0)' end
+return ('define(HookLengthCheck_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe",
+    "74 ? 0f ? ? ? ? ? ? 8b ? ? 48 ? ? ? ? 80 8f ? ? ? ? ? "
+))
+{$asm}
+alloc(HookLengthCheck_Alloc,$1000,HookLengthCheck_At)
+label(HookLengthCheck_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+HookLengthCheck_Alloc:
+HookLengthCheck_Backup:
+  readmem(HookLengthCheck_At,2)
+code:
+orig:
+  readmem(HookLengthCheck_At,2)
+  jmp return
+
+HookLengthCheck_At:
+  nop 2
+return:
+
+registersymbol(HookLengthCheck_At,HookLengthCheck_Alloc,HookLengthCheck_Backup)
+
+[DISABLE]
+HookLengthCheck_At:
+  readmem(HookLengthCheck_Backup,2)
+
+dealloc(HookLengthCheck_Alloc)
+unregistersymbol(HookLengthCheck_At,HookLengthCheck_Alloc,HookLengthCheck_Backup)
+
+</AssemblerScript>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>113863</ID>
+              <Description>"INF Turrent Ammo/ C4 /Gunner Shield"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(InfClassRes_At,0)' end
+return ('define(InfClassRes_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe", "e8 * * * * 48 ? ? ? ? ? ? 4c ? ? ? ? ? ? ? c6 87"))
+{$asm}
+alloc(InfClassRes_Alloc,$1000,InfClassRes_At)
+label(InfClassRes_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+InfClassRes_Alloc:
+InfClassRes_Backup:
+  readmem(InfClassRes_At,11)
+code:
+  xor edx,edx
+orig:
+  readmem(InfClassRes_At,11)
+  jmp return
+
+InfClassRes_At:
+  jmp code
+  nop 6
+return:
+
+registersymbol(InfClassRes_At,InfClassRes_Alloc,InfClassRes_Backup)
+
+[DISABLE]
+InfClassRes_At:
+  readmem(InfClassRes_Backup,11)
+
+dealloc(InfClassRes_Alloc)
+unregistersymbol(InfClassRes_At,InfClassRes_Alloc,InfClassRes_Backup)
+
+
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>113861</ID>
+              <Description>"Weapon Heat Set"</Description>
+              <Options moHideChildren="1"/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(WeaponSetHeat_At,FSD-Win64-Shipping.exe,f3 0f 11 83 ? ? ? ? e8 ? ? ? ? 0f ? ? 77)
+alloc(WeaponSetHeat_Alloc,$1000,WeaponSetHeat_At)
+label(WeaponSetHeat_Backup)
+
+label(code)
+label(orig)
+label(return)
+label(WeaponSetHeat_Val)
+
+WeaponSetHeat_Alloc:
+WeaponSetHeat_Val:
+  dd (float)0
+WeaponSetHeat_Backup:
+  readmem(WeaponSetHeat_At,8)
+code:
+  movss xmm0, [WeaponSetHeat_Val]
+orig:
+  readmem(WeaponSetHeat_At,8)
+  jmp return
+
+WeaponSetHeat_At:
+  jmp code
+  nop 3
+return:
+
+registersymbol(WeaponSetHeat_At,WeaponSetHeat_Alloc,WeaponSetHeat_Backup,WeaponSetHeat_Val)
+
+[DISABLE]
+WeaponSetHeat_At:
+  readmem(WeaponSetHeat_Backup,8)
+
+dealloc(WeaponSetHeat_Alloc)
+unregistersymbol(WeaponSetHeat_At,WeaponSetHeat_Alloc,WeaponSetHeat_Backup,WeaponSetHeat_Val)
+
+</AssemblerScript>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>114077</ID>
+                  <Description>"WeaponSetHeat_Val"</Description>
+                  <DropDownList DisplayValueAsItem="1">0:Zero
+9:Gunner Minigun Red
+1.945:Scout Dark-25
+</DropDownList>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>WeaponSetHeat_Val</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>112887</ID>
+          <Description>"Combat - character - etc...                       "</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>113552</ID>
+              <Description>"Godmode (Players only) (Requires host)"</Description>
+              <Options moHideChildren="1"/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(OnHitCalcDmg_At,FSD-Win64-Shipping.exe,f3 44 0f 11 97 ? ? ? ? 48 89 7c 24 ?)
+alloc(OnHitCalcDmg_Alloc,$1000,OnHitCalcDmg_At)
+label(OnHitCalcDmg_Backup)
+label(code)
+label(orig)
+label(nonPl)
+label(return)
+label(OnHitCalcDmg_scale)
+
+OnHitCalcDmg_Alloc:
+OnHitCalcDmg_scale:
+  dd (float)1
+OnHitCalcDmg_Backup:
+  readmem(OnHitCalcDmg_At,9)
+code:
+  cmp [rdi+280],1
+  jne nonPl
+  xorps xmm10, xmm10
+  jmp orig
+nonPl:
+   // movss xmm10, (float) 999999
+   sub rsp 16
+   movdqu [rsp], xmm1
+   movss xmm1, [OnHitCalcDmg_scale]
+   mulss xmm10, xmm1
+   movdqu xmm1, [rsp]
+   add rsp, 16
+orig:
+  readmem(OnHitCalcDmg_At,9)
+  jmp return
+
+OnHitCalcDmg_At:
+  jmp code
+  nop 4
+return:
+
+registersymbol(OnHitCalcDmg_At,OnHitCalcDmg_Alloc,OnHitCalcDmg_Backup,OnHitCalcDmg_scale)
+
+[DISABLE]
+OnHitCalcDmg_At:
+  readmem(OnHitCalcDmg_Backup,9)
+
+dealloc(OnHitCalcDmg_Alloc)
+unregistersymbol(OnHitCalcDmg_At,OnHitCalcDmg_Alloc,OnHitCalcDmg_Backup,OnHitCalcDmg_scale)
+</AssemblerScript>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>114071</ID>
+                  <Description>"OnHitCalcDmg_scale"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>OnHitCalcDmg_scale</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114012</ID>
+              <Description>"Rapid Fire"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(RapidFire_At,FSD-Win64-Shipping.exe,f3 41 0f 11 86 ? ? ? ? 41 38 ae ? ? ? ? )
+alloc(RapidFire_Alloc,$1000,RapidFire_At)
+label(RapidFire_Backup)
+
+RapidFire_Alloc:
+RapidFire_Backup:
+  readmem(RapidFire_At,9)
+
+RapidFire_At:
+  nop 9
+
+registersymbol(RapidFire_At,RapidFire_Alloc,RapidFire_Backup)
+
+[DISABLE]
+RapidFire_At:
+  readmem(RapidFire_Backup,9)
+
+dealloc(RapidFire_Alloc)
+unregistersymbol(RapidFire_At,RapidFire_Alloc,RapidFire_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>113918</ID>
+              <Description>"No Pickaxe Cooldown"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(PickaxeCooldown_At,FSD-Win64-Shipping.exe,0f 82 ? ? ? ? 4c ? ? ? ? ? ? 48 ? ? ? ? 48 ? ? ? ? ? ? 48)
+alloc(PickaxeCooldown_Alloc,$1000,PickaxeCooldown_At)
+label(PickaxeCooldown_Backup)
+
+PickaxeCooldown_Alloc:
+PickaxeCooldown_Backup:
+  readmem(PickaxeCooldown_At,6)
+
+PickaxeCooldown_At:
+  nop 6
+
+registersymbol(PickaxeCooldown_At,PickaxeCooldown_Alloc,PickaxeCooldown_Backup)
+
+[DISABLE]
+PickaxeCooldown_At:
+  readmem(PickaxeCooldown_Backup,6)
+
+dealloc(PickaxeCooldown_Alloc)
+unregistersymbol(PickaxeCooldown_At,PickaxeCooldown_Alloc,PickaxeCooldown_Backup)
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114030</ID>
+              <Description>"INF Ammo"</Description>
+              <Options moHideChildren="1"/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(InfAmmo_At,0)' end
+return ('define(InfAmmo_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe",
+    "89 81 ? ? ? ? 48 ? ? ff 90 ? ? ? ? 49 ? ?"
+))
+{$asm}
+alloc(InfAmmo_Alloc,$1000,InfAmmo_At)
+label(InfAmmo_Backup)
+
+label(code)
+label(orig)
+label(return)
+label(InfAmmo_ValAt)
+label(skip_orig)
+
+InfAmmo_Alloc:
+InfAmmo_Backup:
+  readmem(InfAmmo_At,6)
+InfAmmo_ValAt:
+  dd 5
+code:
+  push ebx
+  mov ebx, [InfAmmo_ValAt]
+  cmp eax, ebx
+  jle skip_orig
+orig:
+  readmem(InfAmmo_At,6)
+skip_orig:
+  pop ebx
+  jmp return
+
+InfAmmo_At:
+  jmp code
+  nop 1
+return:
+
+registersymbol(InfAmmo_At,InfAmmo_Alloc,InfAmmo_Backup,InfAmmo_ValAt)
+
+[DISABLE]
+InfAmmo_At:
+  readmem(InfAmmo_Backup,6)
+
+dealloc(InfAmmo_Alloc)
+unregistersymbol(InfAmmo_At,InfAmmo_Alloc,InfAmmo_Backup,InfAmmo_ValAt)
+
+</AssemblerScript>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>114081</ID>
+                  <Description>"min ammo"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>InfAmmo_ValAt</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114061</ID>
+              <Description>"INF Grenades (All Players If Host) (Requires Host)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(InfGrenades_At,FSD-Win64-Shipping.exe,ff ? 0f ? ? ? ? 0f ? ? f3 ? ? ? ? ? ? ? 0f 29 5d ?)
+alloc(InfGrenades_Alloc,$1000,InfGrenades_At)
+label(InfGrenades_Backup)
+
+InfGrenades_Alloc:
+InfGrenades_Backup:
+  readmem(InfGrenades_At,2)
+
+InfGrenades_At:
+  nop 2
+
+registersymbol(InfGrenades_At,InfGrenades_Alloc,InfGrenades_Backup)
+
+[DISABLE]
+InfGrenades_At:
+  readmem(InfGrenades_Backup,2)
+
+dealloc(InfGrenades_Alloc)
+unregistersymbol(InfGrenades_At,InfGrenades_Alloc,InfGrenades_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114004</ID>
+              <Description>"INF Flare"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(InfFlare_At,FSD-Win64-Shipping.exe,ff ? 89 8f ? ? ? ? 48 ? ? 75 ?)
+alloc(InfFlare_Alloc,$1000,InfFlare_At)
+label(InfFlare_Backup)
+
+InfFlare_Alloc:
+InfFlare_Backup:
+  readmem(InfFlare_At,2)
+
+InfFlare_At:
+  nop 2
+
+registersymbol(InfFlare_At,InfFlare_Alloc,InfFlare_Backup)
+
+[DISABLE]
+InfFlare_At:
+  readmem(InfFlare_Backup,2)
+
+dealloc(InfFlare_Alloc)
+unregistersymbol(InfFlare_At,InfFlare_Alloc,InfFlare_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114024</ID>
+              <Description>"Instamine Dirt and Ground"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>// Instamine Dirt and Ground
+// Lolbus420
+
+[ENABLE]
+aobscanmodule(Terrain_insta_hit,FSD-Win64-Shipping.exe,44 8B B6 60 04 00 00) // should be unique
+alloc(newmem,$1000,Terrain_insta_hit)
+
+label(code)
+label(return)
+
+newmem:
+mov [rsi+00000460],#2
+mov [rsi+00000464],#2
+code:
+  mov r14d,[rsi+00000460]
+  jmp return
+
+Terrain_insta_hit:
+  jmp newmem
+  nop 2
+return:
+registersymbol(Terrain_insta_hit)
+
+[DISABLE]
+Terrain_insta_hit:
+  db 44 8B B6 60 04 00 00
+
+unregistersymbol(Terrain_insta_hit)
+dealloc(newmem)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>113948</ID>
+              <Description>"Instant Repair // Instant Button // Instant Resupply"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(_InstantRepair_At,FSD-Win64-Shipping.exe,f3 ? ? ? ? ? ? ? f3 ? ? ? f3 ? ? ? ? f3 ? ? ? f3 ? ? ? 0f ? ? 76 ? 0f ? ? eb ?)
+define(InstantRepair_At, _InstantRepair_At+11)
+alloc(InstantRepair_Alloc,$1000,InstantRepair_At)
+label(InstantRepair_Backup)
+
+label(code)
+label(setVal)
+label(return)
+
+InstantRepair_Alloc:
+setVal:
+  dd (float)1
+InstantRepair_Backup:
+  readmem(InstantRepair_At,8)
+code:
+  movss xmm1 [setVal]
+  jmp return
+
+InstantRepair_At:
+  jmp code
+  nop 3
+return:
+
+registersymbol(InstantRepair_At,InstantRepair_Alloc,InstantRepair_Backup)
+
+[DISABLE]
+InstantRepair_At:
+  readmem(InstantRepair_Backup,8)
+
+dealloc(InstantRepair_Alloc)
+unregistersymbol(InstantRepair_At,InstantRepair_Alloc,InstantRepair_Backup)
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>113056</ID>
+          <Description>"Movement"</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>25669</ID>
+              <Description>"Toggle Unlimited Jumping"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(CheckJump_At,FSD-Win64-Shipping.exe,48 89 5c 24 ? 57 48 ? ? ? 0f ? ? ? ? ? ? 48 ? ? 48 ? ? ? ? ? ? f6)
+alloc(CheckJump_Alloc,$1000,CheckJump_At)
+label(CheckJump_Backup)
+
+CheckJump_Alloc:
+CheckJump_Backup:
+  readmem(CheckJump_At,8)
+
+CheckJump_At:
+  mov al 1
+  ret
+
+registersymbol(CheckJump_At,CheckJump_Alloc,CheckJump_Backup)
+
+[DISABLE]
+CheckJump_At:
+  readmem(CheckJump_Backup,8)
+
+dealloc(CheckJump_Alloc)
+unregistersymbol(CheckJump_At,CheckJump_Alloc,CheckJump_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>113645</ID>
+              <Description>"Teleport to waypoint"</Description>
+              <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(PosChange_At,FSD-Win64-Shipping.exe,0f ? ? ? ? ? ? 0f ? ? 0f ? ? 0f ? ? ? 0f ? ? ? 0f ? ? f3 0f 11 44 24 ? 8b ? ? ? 89 45)
+alloc(PosChange_Alloc,$1000,PosChange_At)
+label(PosChange_Backup)
+
+label(PosChange_Pos)
+label(PosChange_Flag)
+
+label(code)
+label(save)
+label(orig)
+label(return)
+
+PosChange_Alloc:
+PosChange_Pos:
+  dq 0
+  dq 0
+PosChange_Flag:
+  dd 0
+PosChange_Backup:
+  readmem(PosChange_At,7)
+
+code:
+  sub rsp 16
+  movdqu [rsp], xmm1
+  cmp [PosChange_Flag],0
+  jne save
+//load:
+  movdqu xmm1, [rax+1d0]
+  movdqu [PosChange_Pos], xmm1
+  jmp orig
+save:
+  push rax
+  mov rax, [rax+1dc]
+  mov [PosChange_Pos+c], rax
+  pop rax
+
+  movdqu xmm1, [PosChange_Pos]
+  movdqu [rax+1d0], xmm1
+  mov [PosChange_Flag], 0
+orig:
+   movdqu xmm1, [rsp]
+   add rsp, 16
+  readmem(PosChange_At,7)
+  jmp return
+
+PosChange_At:
+  jmp code
+  nop 2
+return:
+
+registersymbol(PosChange_At,PosChange_Alloc,PosChange_Backup,PosChange_Pos,PosChange_Flag)
+
+[DISABLE]
+PosChange_At:
+  readmem(PosChange_Backup,7)
+
+dealloc(PosChange_Alloc)
+unregistersymbol(PosChange_At,PosChange_Alloc,PosChange_Backup,PosChange_Pos,PosChange_Flag)
+</AssemblerScript>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>114072</ID>
+                  <Description>"PosChange_Flag"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>PosChange_Flag</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114073</ID>
+                  <Description>"x"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>PosChange_Pos</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114075</ID>
+                  <Description>"y"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>PosChange_Pos+4</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114074</ID>
+                  <Description>"z"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>PosChange_Pos+8</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114076</ID>
+                  <Description>"q_tp(hotkey: f5)"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>{$lua}
+if syntaxcheck then return end
+
+local function alertAndRaise(desc)
+  showMessage(desc)
+  error(desc)
+end
+
+local function fmt_pos(x,y,z)
+  return ("%.2f, %.2f, %.2f"):format(x, y, z)
+end
+
+local function q_tp()
+  local p_Pos = getAddress("PosChange_Pos")
+  local p_flag = getAddress("PosChange_Flag")
+  local old_pos = fmt_pos(readFloat(p_Pos), readFloat(p_Pos+4), readFloat(p_Pos+8))
+  local new_pos = inputQuery("Teleport to","",old_pos)
+  if new_pos == nil then alertAndRaise("Cancel") end
+  local x, y, z = new_pos:match(" *([-+]?%d+%.?%d*) *, *([-+]?%d+%.?%d*) *, *([-+]?%d+%.?%d*)")
+  if x == nil then alertAndRaise("Unknown Fmt") end
+  writeFloat(p_Pos, x)
+  writeFloat(p_Pos+4, y)
+  writeFloat(p_Pos+8, z)
+  writeInteger(p_flag, 1)
+  alertAndRaise("tp success, to: "..fmt_pos(x,y,z))
+end
+
+
+[ENABLE]
+q_tp()
+[DISABLE]
+q_tp()
+</AssemblerScript>
+                  <Hotkeys>
+                    <Hotkey>
+                      <Action>Toggle Activation</Action>
+                      <Keys>
+                        <Key>116</Key>
+                      </Keys>
+                      <ID>0</ID>
+                    </Hotkey>
+                  </Hotkeys>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>436</ID>
+          <Description>"Ores - Currencies - event"</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114070</ID>
+              <Description>"INF Deposit (All Players)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(InfDeposit_At,FSD-Win64-Shipping.exe,76 ? f3 ? ? ? 48 89 4c 24 ? 48 ? ? ? ? f3 0f 11 51)
+
+alloc(InfDeposit_Alloc,$1000,InfDeposit_At)
+label(InfDeposit_Backup)
+
+InfDeposit_Alloc:
+InfDeposit_Backup:
+  readmem(InfDeposit_At,2)
+
+InfDeposit_At:
+  db eb
+
+registersymbol(InfDeposit_At,InfDeposit_Alloc,InfDeposit_Backup)
+
+[DISABLE]
+InfDeposit_At:
+  readmem(InfDeposit_Backup,2)
+
+dealloc(InfDeposit_Alloc)
+unregistersymbol(InfDeposit_At,InfDeposit_Alloc,InfDeposit_Backup)
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>49</ID>
+              <Description>"Mine Max(Requires Host)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(MaxRes_At,0)' end
+return ('define(MaxRes_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe", "e8 * * * * f3 ? ? ? ? ? ? ? f3 ? ? ? 0f ? ? f3 0f 11 87"))
+{$asm}
+alloc(MaxRes_Alloc,$1000,MaxRes_At)
+label(MaxRes_Backup)
+
+label(code)
+label(orig)
+label(return)
+//label(res_scale)
+label(res_set)
+
+MaxRes_Alloc:
+//res_scale:
+//  dd (float)1
+res_set:
+  dd (float)100.0
+MaxRes_Backup:
+  readmem(MaxRes_At,6)
+code:
+ //  sub rsp 16
+ //  movdqu [rsp], xmm2
+ //  movss xmm2, [res_scale]
+ //  mulss xmm1, xmm2
+ //  movdqu xmm2, [rsp]
+ //  add rsp, 16
+  movss xmm1, [res_set]
+orig:
+  readmem(MaxRes_At,6)
+  jmp return
+
+MaxRes_At:
+  jmp code
+  nop 1
+return:
+
+registersymbol(MaxRes_At,MaxRes_Alloc,MaxRes_Backup)
+
+[DISABLE]
+MaxRes_At:
+  readmem(MaxRes_Backup,6)
+
+dealloc(MaxRes_Alloc)
+unregistersymbol(MaxRes_At,MaxRes_Alloc,MaxRes_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>335</ID>
+              <Description>"Free Supply (Host Required)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(FreeSupply_At,FSD-Win64-Shipping.exe,f3 ? ? ? 48 89 4c 24 ? 48 ? ? ? ? f3 0f 11 41 )
+
+alloc(FreeSupply_Alloc,$1000,FreeSupply_At)
+label(FreeSupply_Backup)
+
+FreeSupply_Alloc:
+FreeSupply_Backup:
+  readmem(FreeSupply_At,4)
+
+FreeSupply_At:
+   nop 4
+  //addss xmm0,xmm6
+
+registersymbol(FreeSupply_At,FreeSupply_Alloc,FreeSupply_Backup)
+
+[DISABLE]
+FreeSupply_At:
+  readmem(FreeSupply_Backup,4)
+
+dealloc(FreeSupply_Alloc)
+unregistersymbol(FreeSupply_At,FreeSupply_Alloc,FreeSupply_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>113964</ID>
+              <Description>"Free Shopping"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(FreeShop_At,0)' end
+return ('define(FreeShop_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe", "e8 * * * * 33 ? c7 45 ? ? ? ? ? 4d ? ? ? ? ? ? ? 89 4d"))
+{$asm}
+alloc(FreeShop_Alloc,$1000,FreeShop_At)
+label(FreeShop_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+FreeShop_Alloc:
+FreeShop_Backup:
+  readmem(FreeShop_At,6)
+code:
+  xor edx,edx
+orig:
+  readmem(FreeShop_At,6)
+  jmp return
+
+FreeShop_At:
+  jmp code
+  nop 1
+return:
+
+registersymbol(FreeShop_At,FreeShop_Alloc,FreeShop_Backup)
+
+[DISABLE]
+FreeShop_At:
+  readmem(FreeShop_Backup,6)
+
+dealloc(FreeShop_Alloc)
+unregistersymbol(FreeShop_At,FreeShop_Alloc,FreeShop_Backup)
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114045</ID>
+              <Description>"Set money to 1 billion (Spend money while activated)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(SetMoney_At,FSD-Win64-Shipping.exe,29 83 ? ? ? ? 48 ? ? ? 8b ? ? ? ? ?)
+alloc(SetMoney_Alloc,$1000,SetMoney_At)
+label(SetMoney_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+SetMoney_Alloc:
+SetMoney_Backup:
+  readmem(SetMoney_At,6)
+code:
+orig:
+  mov [rbx+578], (int)1000000000
+  jmp return
+
+SetMoney_At:
+  jmp code
+  nop 1
+return:
+
+registersymbol(SetMoney_At,SetMoney_Alloc,SetMoney_Backup)
+
+[DISABLE]
+SetMoney_At:
+  readmem(SetMoney_Backup,6)
+
+dealloc(SetMoney_Alloc)
+unregistersymbol(SetMoney_At,SetMoney_Alloc,SetMoney_Backup)
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114041</ID>
+              <Description>"Infinite Scrips"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(InfScrips_At,FSD-Win64-Shipping.exe, 0f 8c ? ? ? ? ff ? 89 48 ?)
+
+alloc(InfScrips_Alloc,$1000,InfScrips_At)
+label(InfScrips_Backup)
+
+InfScrips_Alloc:
+InfScrips_Backup:
+  readmem(InfScrips_At,8)
+
+InfScrips_At:
+  nop 8
+
+registersymbol(InfScrips_At,InfScrips_Alloc,InfScrips_Backup)
+
+[DISABLE]
+InfScrips_At:
+  readmem(InfScrips_Backup,8)
+
+dealloc(InfScrips_Alloc)
+unregistersymbol(InfScrips_At,InfScrips_Alloc,InfScrips_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114040</ID>
+              <Description>"Set scrips to 100. (Use one scrip while activated)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+aobscanmodule(SetScrips_At,FSD-Win64-Shipping.exe, 0f 8c ? ? ? ? ff ? 89 48 ?)
+
+alloc(SetScrips_Alloc,$1000,SetScrips_At)
+label(SetScrips_Backup)
+
+SetScrips_Alloc:
+SetScrips_Backup:
+  readmem(SetScrips_At,8)
+
+SetScrips_At:
+  mov ecx, 100
+  nop 3
+
+registersymbol(SetScrips_At,SetScrips_Alloc,SetScrips_Backup)
+
+[DISABLE]
+SetScrips_At:
+  readmem(SetScrips_Backup,8)
+
+dealloc(SetScrips_Alloc)
+unregistersymbol(SetScrips_At,SetScrips_Alloc,SetScrips_Backup)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114038</ID>
+              <Description>"Set season level to level 100. (Complete any kind of mission while activated)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(SeasonXpMax_At,0)' end
+return ('define(SeasonXpMax_At,%08X)'):format(aobScanModule(nil,"FSD-Win64-Shipping.exe", "e8 * * * * 8b ? ? 49 ? ? e8 ? ? ? ? 48 ? ? ? ? 49 ? ?"))
+{$asm}
+alloc(SeasonXpMax_Alloc,$1000,SeasonXpMax_At)
+label(SeasonXpMax_Backup)
+
+label(code)
+label(orig)
+label(return)
+
+SeasonXpMax_Alloc:
+SeasonXpMax_Backup:
+  readmem(SeasonXpMax_At,5)
+code:
+  mov r14, 500000
+  cmovns  rdx, r14
+orig:
+  readmem(SeasonXpMax_At,5)
+  jmp return
+
+SeasonXpMax_At:
+  jmp code
+return:
+
+registersymbol(SeasonXpMax_At,SeasonXpMax_Alloc,SeasonXpMax_Backup)
+
+[DISABLE]
+SeasonXpMax_At:
+  readmem(SeasonXpMax_Backup,5)
+
+dealloc(SeasonXpMax_Alloc)
+unregistersymbol(SeasonXpMax_At,SeasonXpMax_Alloc,SeasonXpMax_Backup)
+
+
+
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(AsmPatch_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    aobScanModule("AsmPatch_at","ProcessName.exe","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+  )
+end
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Mono_Method1,%x)
+define(_Mono_Method2,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","Mono","Method1"),
+    findMonoFunction("","Mono","Method2","int,int,int") -- or pass a sign
+  )
+end
+{$asm}
+alloc(mono_patch_alloc,1024,_Mono_Method1)
+label(mono_patch_backup)
+label(mono_patch_code)
+label(mono_patch_return)
+
+mono_patch_alloc:
+mono_patch_code:
+  mov eax, ecx
+mono_patch_backup:
+  readmem(_Mono_Method1,6) // hook inst
+  jmp mono_patch_return
+
+_Mono_Method1:
+  jmp mono_patch_code  // near jump cost size 5
+  nop 1  // pad
+mono_patch_return:
+
+registersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+ 
+ 
+[DISABLE]
+_Mono_Method1:
+  readmem(mono_patch_backup,6)
+
+dealloc(mono_patch_alloc)
+unregistersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+function ensure_monopipe()
+  if monopipe then return monopipe end
+  LaunchMonoDataCollector()
+  if monopipe then return monopipe end
+  error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+end
+
+function findMonoFunction(namespace, cls, method, sign)
+  ensure_monopipe()
+  local methods = mono_class_enumMethods(mono_findClass(namespace,cls))
+  for i = 1,#methods do
+    if methods[i].name == method then
+      if sign == nil or mono_method_getSignature(methods[i].method) == sign then
+        return mono_compile_method(methods[i].method)
+      end
+    end
+  end
+  error(("cannot find method %s:%s:%s with sign "):format(namespace,cls,method,sign))
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('Death Must Die.exe')
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"InfFudge"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Death_Run_Core_FudgeStats_Get,%x)
+define(_Death_Run_Core_FudgeStats_Use,%x)
+define(_Death_Run_Core_FudgeStats_HadStat,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0,0)
+else
+  return defs:format(
+    findMonoFunction("Death.Run.Core","FudgeStats","Get"),
+    findMonoFunction("Death.Run.Core","FudgeStats","Use"),
+    findMonoFunction("Death.Run.Core","FudgeStats","HadStat")
+  )
+end
+{$asm}
+alloc(inf_fudge_alloc,1024,_Death_Run_Core_FudgeStats_Get)
+
+label(is_target_fudge_id)
+
+label(inf_fudge_get_backup)
+label(inf_fudge_get_code)
+label(inf_fudge_get_return)
+
+label(inf_fudge_use_backup)
+label(inf_fudge_use_code)
+label(inf_fudge_use_return)
+
+label(inf_fudge_HadStat_backup)
+label(inf_fudge_HadStat_code)
+label(inf_fudge_HadStat_return)
+
+inf_fudge_alloc:
+inf_fudge_code:
+
+is_target_fudge_id:
+  mov al, 1
+  ret
+
+inf_fudge_get_code:
+  call is_target_fudge_id
+  test    rax, rax
+  jz      inf_fudge_get_backup
+  mov rax, (int)999
+  ret
+inf_fudge_get_backup:
+  readmem(_Death_Run_Core_FudgeStats_Get,8)
+  jmp inf_fudge_get_return
+
+inf_fudge_use_code:
+  call is_target_fudge_id
+  test    rax, rax
+  jz      inf_fudge_use_backup
+  ret
+inf_fudge_use_backup:
+  readmem(_Death_Run_Core_FudgeStats_Use,8)
+  jmp inf_fudge_use_return
+
+inf_fudge_HadStat_code:
+  call is_target_fudge_id
+  test    rax, rax
+  jz      inf_fudge_HadStat_backup
+  ret
+inf_fudge_HadStat_backup:
+  readmem(_Death_Run_Core_FudgeStats_HadStat,8)
+  jmp inf_fudge_HadStat_return
+
+_Death_Run_Core_FudgeStats_Get:
+  jmp inf_fudge_get_code
+  nop 3
+inf_fudge_get_return:
+
+_Death_Run_Core_FudgeStats_Use:
+  jmp inf_fudge_use_code
+  nop 3
+inf_fudge_use_return:
+
+_Death_Run_Core_FudgeStats_HadStat:
+  jmp inf_fudge_HadStat_code
+  nop 3
+inf_fudge_HadStat_return:
+
+registersymbol(inf_fudge_alloc)
+registersymbol(_Death_Run_Core_FudgeStats_Get,inf_fudge_get_backup)
+registersymbol(_Death_Run_Core_FudgeStats_Use,inf_fudge_use_backup)
+registersymbol(_Death_Run_Core_FudgeStats_HadStat,inf_fudge_HadStat_backup)
+
+
+[DISABLE]
+_Death_Run_Core_FudgeStats_Get:
+  readmem(inf_fudge_get_backup,8)
+
+_Death_Run_Core_FudgeStats_Use:
+  readmem(inf_fudge_use_backup,8)
+
+_Death_Run_Core_FudgeStats_HadStat:
+  readmem(inf_fudge_HadStat_backup,8)
+
+dealloc(inf_fudge_alloc)
+unregistersymbol(inf_fudge_alloc)
+unregistersymbol(_Death_Run_Core_FudgeStats_Get,inf_fudge_get_backup)
+unregistersymbol(_Death_Run_Core_FudgeStats_Use,inf_fudge_use_backup)
+unregistersymbol(_Death_Run_Core_FudgeStats_HadStat,inf_fudge_HadStat_backup)
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114072</ID>
+          <Description>"FixSkillRarity"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Death_Run_Systems_Rewards_RewardGenerator_RandomRarity,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunction("Death.Run.Systems.Rewards","RewardGenerator","RandomRarity")
+  )
+end
+{$asm}
+alloc(fix_skill_rarity_alloc,1024,_Death_Run_Systems_Rewards_RewardGenerator_RandomRarity)
+label(fix_skill_rarity_backup)
+label(fix_skill_rarity_var)
+label(fix_skill_rarity_code)
+label(fix_skill_rarity_return)
+
+fix_skill_rarity_alloc:
+fix_skill_rarity_var:
+  dq (int)3
+fix_skill_rarity_code:
+  mov eax, [fix_skill_rarity_var]
+  ret
+fix_skill_rarity_backup:
+  readmem(_Death_Run_Systems_Rewards_RewardGenerator_RandomRarity,8) // hook inst
+  jmp fix_skill_rarity_return
+
+_Death_Run_Systems_Rewards_RewardGenerator_RandomRarity:
+  jmp fix_skill_rarity_code  // near jump cost size 5
+  nop 3  // pad
+fix_skill_rarity_return:
+
+registersymbol(_Death_Run_Systems_Rewards_RewardGenerator_RandomRarity,fix_skill_rarity_alloc,fix_skill_rarity_backup,fix_skill_rarity_var)
+ 
+ 
+[DISABLE]
+_Death_Run_Systems_Rewards_RewardGenerator_RandomRarity:
+  readmem(fix_skill_rarity_backup,8)
+
+dealloc(fix_skill_rarity_alloc)
+unregistersymbol(_Death_Run_Systems_Rewards_RewardGenerator_RandomRarity,fix_skill_rarity_alloc,fix_skill_rarity_backup,fix_skill_rarity_var)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114073</ID>
+              <Description>"var"</Description>
+              <DropDownList>0:Novice
+1:Adept
+2:Expert
+3:Master
+4:Legend
+5:Demigod
+6:Gifted
+7:Cursed
+</DropDownList>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>fix_skill_rarity_var</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114074</ID>
+          <Description>"FixItemRarity"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Death_Items_ItemGenerator_PickRandomRarity,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunction("Death.Items","ItemGenerator","PickRandomRarity")
+  )
+end
+{$asm}
+alloc(fix_item_rarity_alloc,1024,_Death_Items_ItemGenerator_PickRandomRarity)
+label(fix_item_rarity_backup)
+label(fix_item_rarity_var)
+label(fix_item_rarity_code)
+label(fix_item_rarity_return)
+
+fix_item_rarity_alloc:
+fix_item_rarity_var:
+  dq (int)5
+fix_item_rarity_code:
+  mov eax, [fix_item_rarity_var]
+  ret
+fix_item_rarity_backup:
+  readmem(_Death_Items_ItemGenerator_PickRandomRarity,8) // hook inst
+  jmp fix_item_rarity_return
+
+_Death_Items_ItemGenerator_PickRandomRarity:
+  jmp fix_item_rarity_code  // near jump cost size 5
+  nop 3  // pad
+fix_item_rarity_return:
+
+registersymbol(_Death_Items_ItemGenerator_PickRandomRarity,fix_item_rarity_alloc,fix_item_rarity_backup,fix_item_rarity_var)
+ 
+ 
+[DISABLE]
+_Death_Items_ItemGenerator_PickRandomRarity:
+  readmem(fix_item_rarity_backup,8)
+
+dealloc(fix_item_rarity_alloc)
+unregistersymbol(_Death_Items_ItemGenerator_PickRandomRarity,fix_item_rarity_alloc,fix_item_rarity_backup,fix_item_rarity_var)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114075</ID>
+              <Description>"var"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>fix_item_rarity_var</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114076</ID>
+          <Description>"More Xp"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Death_Run_Behaviors_Entities_Behaviour_XpTracker_GainXpImpl,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunction("Death.Run.Behaviours.Entities","Behaviour_XpTracker","GainXpImpl")
+  )
+end
+{$asm}
+alloc(more_xp_alloc,1024,_Death_Run_Behaviors_Entities_Behaviour_XpTracker_GainXpImpl)
+label(more_xp_backup)
+label(more_xp_var)
+label(more_xp_code)
+label(more_xp_return)
+
+more_xp_alloc:
+more_xp_var:
+  dq (float)10
+more_xp_code:
+  mulps xmm1, [more_xp_var]
+more_xp_backup:
+  readmem(_Death_Run_Behaviors_Entities_Behaviour_XpTracker_GainXpImpl,8) // hook inst
+  jmp more_xp_return
+
+_Death_Run_Behaviors_Entities_Behaviour_XpTracker_GainXpImpl:
+  jmp more_xp_code  // near jump cost size 5
+  nop 3  // pad
+more_xp_return:
+
+registersymbol(_Death_Run_Behaviors_Entities_Behaviour_XpTracker_GainXpImpl,more_xp_alloc,more_xp_backup,more_xp_var)
+ 
+ 
+[DISABLE]
+_Death_Run_Behaviors_Entities_Behaviour_XpTracker_GainXpImpl:
+  readmem(more_xp_backup,8)
+
+dealloc(more_xp_alloc)
+unregistersymbol(_Death_Run_Behaviors_Entities_Behaviour_XpTracker_GainXpImpl,more_xp_alloc,more_xp_backup,more_xp_var)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114077</ID>
+              <Description>"multiplyer"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>more_xp_var</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

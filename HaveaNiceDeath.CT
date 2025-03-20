@@ -1,0 +1,501 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+function findMonoFunctionWithSign(namespace, cls, method, sign)
+  local methods = mono_class_enumMethods(mono_findClass(namespace,cls))
+  for i = 1,#methods do
+    if methods[i].name == method then
+      if mono_method_getSignature(methods[i].method) == sign then
+        return mono_compile_method(methods[i].method)
+      end
+    end
+  end
+  error(("cannot find method %s:%s:%s with sign "):format(namespace,cls,method,sign))
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('HaveaNiceDeath.exe')
+    if not monopipe then
+      if LaunchMonoDataCollector() == 0 then
+        error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+      end
+    end
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"CollectableNoCost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_DeathApPlayerData_SpendCollectible,%x)
+define(_DeathApPlayerData_IncrementCollectibleCount,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunctionWithSign("","DeathApPlayerData","SpendCollectible","int,int,int"),
+    findMonoFunctionWithSign("","DeathApPlayerData","IncrementCollectibleCount","int,int,int")
+  )
+end
+{$asm}
+alloc(collectable_nocost_alloc,1024)
+label(collectable_nocost_backup)
+
+collectable_nocost_alloc:
+collectable_nocost_backup:
+readmem(_DeathApPlayerData_SpendCollectible,5)
+
+_DeathApPlayerData_SpendCollectible:
+jmp _DeathApPlayerData_IncrementCollectibleCount
+
+registersymbol(_DeathApPlayerData_SpendCollectible,_DeathApPlayerData_IncrementCollectibleCount,collectable_nocost_alloc,collectable_nocost_backup)
+ 
+ 
+[DISABLE]
+_DeathApPlayerData_SpendCollectible:
+readmem(collectable_nocost_backup,5)
+
+dealloc(collectable_nocost_alloc)
+unregistersymbol(_DeathApPlayerData_SpendCollectible,_DeathApPlayerData_IncrementCollectibleCount,collectable_nocost_alloc,collectable_nocost_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>3</ID>
+          <Description>"InfMana"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_ManaManager_SpendMana,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunctionWithSign("","ManaManager","SpendMana","single")
+  )
+end
+{$asm}
+alloc(InfMana_alloc,1024)
+label(InfMana_backup)
+
+InfMana_alloc:
+InfMana_backup:
+readmem(_ManaManager_SpendMana,5)
+
+_ManaManager_SpendMana:
+ret
+
+registersymbol(_ManaManager_SpendMana,InfMana_alloc,InfMana_backup)
+ 
+ 
+[DISABLE]
+_ManaManager_SpendMana:
+readmem(InfMana_backup,5)
+
+dealloc(InfMana_alloc)
+unregistersymbol(_ManaManager_get_CurrentMana,InfMana_alloc,InfMana_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>4</ID>
+          <Description>"HasAnimaHeal"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : HaveaNiceDeath.exe
+  Version: 
+  Date   : 2025-02-12
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+{$lua}
+local defs = [[
+define(_AnimaManager_AnimaHeal,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunctionWithSign("","AnimaManager","AnimaHeal","single,single,bool")
+  )
+end
+{$asm}
+// aobScan(HasAnimaHeal,8B 46 38 8B 4E 3C 03) // should be unique
+define(HasAnimaHeal,_AnimaManager_AnimaHeal+1a)
+alloc(newmem,$1000)
+
+label(code)
+label(return)
+label(skip)
+
+newmem:
+code:
+  mov eax,[esi+38]
+  mov ecx,[esi+3C]
+  cmp ecx, 4
+  jg skip
+  mov ecx, 4
+skip:
+  mov [esi+3C], ecx
+  jmp return
+
+HasAnimaHeal:
+  jmp newmem
+  nop
+return:
+registersymbol(HasAnimaHeal)
+
+[DISABLE]
+
+HasAnimaHeal:
+  db 8B 46 38 8B 4E 3C
+
+unregistersymbol(HasAnimaHeal)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: AnimaManager:AnimaHeal+1a
+
+AnimaManager:AnimaHeal: 55                 - push ebp
+AnimaManager:AnimaHeal+1: 8B EC              - mov ebp,esp
+AnimaManager:AnimaHeal+3: 57                 - push edi
+AnimaManager:AnimaHeal+4: 56                 - push esi
+AnimaManager:AnimaHeal+5: 83 EC 30           - sub esp,30
+AnimaManager:AnimaHeal+8: 8B 75 08           - mov esi,[ebp+08]
+AnimaManager:AnimaHeal+b: 8B 7D 14           - mov edi,[ebp+14]
+AnimaManager:AnimaHeal+e: 0F B6 46 4B        - movzx eax,byte ptr [esi+4B]
+AnimaManager:AnimaHeal+12: 85 C0              - test eax,eax
+AnimaManager:AnimaHeal+14: 0F 84 AA 01 00 00  - je AnimaManager:AnimaHeal+1c4
+// ---------- INJECTING HERE ----------
+AnimaManager:AnimaHeal+1a: 8B 46 38           - mov eax,[esi+38]
+// ---------- DONE INJECTING  ----------
+AnimaManager:AnimaHeal+1d: 8B 4E 3C           - mov ecx,[esi+3C]
+AnimaManager:AnimaHeal+20: 03 C1              - add eax,ecx
+AnimaManager:AnimaHeal+22: 50                 - push eax
+AnimaManager:AnimaHeal+23: DB 04 24           - fild dword ptr [esp]
+AnimaManager:AnimaHeal+26: D9 1C 24           - fstp dword ptr [esp]
+AnimaManager:AnimaHeal+29: D9 04 24           - fld dword ptr [esp]
+AnimaManager:AnimaHeal+2c: 83 C4 04           - add esp,04
+AnimaManager:AnimaHeal+2f: D9 45 0C           - fld dword ptr [ebp+0C]
+AnimaManager:AnimaHeal+32: DF F1              - fcomip st(0),st(1)
+AnimaManager:AnimaHeal+34: DD D8              - fstp st(0)
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5</ID>
+          <Description>"NoCd"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_PlayerMeleeFightComponent_AddTemporaryDisabledAttack,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunctionWithSign("","PlayerMeleeFightComponent","AddTemporaryDisabledAttack","Attack,DACooldownHoldAttackData,Flag")
+  )
+end
+{$asm}
+alloc(NoCd_alloc,1024)
+label(NoCd_backup)
+
+NoCd_alloc:
+NoCd_backup:
+readmem(_PlayerMeleeFightComponent_AddTemporaryDisabledAttack,5)
+
+_PlayerMeleeFightComponent_AddTemporaryDisabledAttack:
+ret
+
+registersymbol(_PlayerMeleeFightComponent_AddTemporaryDisabledAttack,NoCd_alloc,NoCd_backup)
+ 
+ 
+[DISABLE]
+_PlayerMeleeFightComponent_AddTemporaryDisabledAttack:
+readmem(NoCd_backup,5)
+
+dealloc(NoCd_alloc)
+unregistersymbol(_PlayerMeleeFightComponent_AddTemporaryDisabledAttack,NoCd_alloc,NoCd_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6</ID>
+          <Description>"MaxCharge"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_ComboChargeData_GetChargeLevel,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunctionWithSign("","ComboChargeData","GetChargeLevel","single")
+  )
+end
+{$asm}
+define(MaxCharge,_ComboChargeData_GetChargeLevel+45)
+MaxCharge:
+  nop 2
+registersymbol(MaxCharge)
+
+[DISABLE]
+
+MaxCharge:
+  db 7C C9
+unregistersymbol(MaxCharge)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>7</ID>
+          <Description>"InfJump"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_ClassicJumpHandler_get_AvailableJumps,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunctionWithSign("","ClassicJumpHandler","get_AvailableJumps","")
+  )
+end
+{$asm}
+alloc(IbfJump_alloc,1024)
+label(IbfJump_backup)
+
+IbfJump_alloc:
+mov eax, 1
+ret
+IbfJump_backup:
+readmem(_ClassicJumpHandler_get_AvailableJumps,5)
+
+_ClassicJumpHandler_get_AvailableJumps:
+jmp IbfJump_alloc
+
+registersymbol(_ClassicJumpHandler_get_AvailableJumps,IbfJump_alloc,IbfJump_backup)
+ 
+ 
+[DISABLE]
+_ClassicJumpHandler_get_AvailableJumps:
+readmem(IbfJump_backup,5)
+
+dealloc(IbfJump_alloc)
+unregistersymbol(_ClassicJumpHandler_get_AvailableJumps,IbfJump_alloc,IbfJump_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>8</ID>
+          <Description>"InfDash"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_ClassicDashHandler_CanDashNow,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunctionWithSign("","ClassicDashHandler","CanDashNow","")
+  )
+end
+{$asm}
+alloc(InfDash_alloc,1024)
+label(InfDash_backup)
+
+InfDash_alloc:
+mov eax, 1
+ret
+InfDash_backup:
+readmem(_ClassicDashHandler_CanDashNow,5)
+
+_ClassicDashHandler_CanDashNow:
+jmp InfDash_alloc
+
+registersymbol(_ClassicDashHandler_CanDashNow,InfDash_alloc,InfDash_backup)
+ 
+ 
+[DISABLE]
+_ClassicDashHandler_CanDashNow:
+readmem(InfDash_backup,5)
+
+dealloc(InfDash_alloc)
+unregistersymbol(_ClassicDashHandler_CanDashNow,InfDash_alloc,InfDash_backup)
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <CheatCodes>
+    <CodeEntry>
+      <Description>Change of jb PlayerMeleeFightComponent:OnUpdate+175</Description>
+      <AddressString>26F58430</AddressString>
+      <Before>
+        <Byte>EE</Byte>
+        <Byte>DF</Byte>
+        <Byte>F1</Byte>
+        <Byte>DD</Byte>
+        <Byte>D8</Byte>
+      </Before>
+      <Actual>
+        <Byte>0F</Byte>
+        <Byte>82</Byte>
+        <Byte>7F</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>8B</Byte>
+        <Byte>87</Byte>
+        <Byte>34</Byte>
+        <Byte>01</Byte>
+        <Byte>00</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of jl ComboChargeData:GetChargeLevel+10</Description>
+      <AddressString>266CFFB5</AddressString>
+      <Before>
+        <Byte>8B</Byte>
+        <Byte>40</Byte>
+        <Byte>0C</Byte>
+        <Byte>3B</Byte>
+        <Byte>F0</Byte>
+      </Before>
+      <Actual>
+        <Byte>7C</Byte>
+        <Byte>C9</Byte>
+      </Actual>
+      <After>
+        <Byte>8B</Byte>
+        <Byte>47</Byte>
+        <Byte>1C</Byte>
+        <Byte>8B</Byte>
+        <Byte>C8</Byte>
+      </After>
+    </CodeEntry>
+  </CheatCodes>
+  <UserdefinedSymbols/>
+  <Comments>Info about this table:
+</Comments>
+</CheatTable>

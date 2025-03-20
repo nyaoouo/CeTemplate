@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>1</ID>
+      <Description>"hp reg inf"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Game   : Windblown.exe
+  Version: 
+  Date   : 2024-10-25
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(use_hp_reg,GameAssembly.dll,44 0F B6 3E 45 33 C9 4C 8B C3 48 8B D7 48 8B CE E8 11) // should be unique
+alloc(newmem,$1000,use_hp_reg)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  movzx r15d,byte ptr [rsi]
+  add r15d, 5
+  mov [rsi], r15d
+  xor r9d,r9d
+  jmp return
+
+use_hp_reg:
+  jmp newmem
+  nop 2
+return:
+registersymbol(use_hp_reg)
+
+[DISABLE]
+
+use_hp_reg:
+  db 44 0F B6 3E 45 33 C9
+
+unregistersymbol(use_hp_reg)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll.il2cpp+18CE61A
+
+GameAssembly.dll.il2cpp+18CE5E5: 48 8B F1                 - mov rsi,rcx
+GameAssembly.dll.il2cpp+18CE5E8: 75 13                    - jne GameAssembly.dll.il2cpp+18CE5FD
+GameAssembly.dll.il2cpp+18CE5EA: 48 8D 0D 0F DF BE 01     - lea rcx,[GameAssembly.dll.data+AF500]
+GameAssembly.dll.il2cpp+18CE5F1: E8 3A D3 6D FE           - call GameAssembly.dll.text+40D930
+GameAssembly.dll.il2cpp+18CE5F6: C6 05 16 3E E2 01 01     - mov byte ptr [GameAssembly.dll+3B55413],01
+GameAssembly.dll.il2cpp+18CE5FD: 48 81 7E 20 00 00 64 00  - cmp qword ptr [rsi+20],00640000
+GameAssembly.dll.il2cpp+18CE605: 48 89 6C 24 50           - mov [rsp+50],rbp
+GameAssembly.dll.il2cpp+18CE60A: 0F 8D B1 00 00 00        - jnl GameAssembly.dll.il2cpp+18CE6C1
+GameAssembly.dll.il2cpp+18CE610: 4C 89 74 24 58           - mov [rsp+58],r14
+GameAssembly.dll.il2cpp+18CE615: 4C 89 7C 24 60           - mov [rsp+60],r15
+// ---------- INJECTING HERE ----------
+GameAssembly.dll.il2cpp+18CE61A: 44 0F B6 3E              - movzx r15d,byte ptr [rsi]
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll.il2cpp+18CE61E: 45 33 C9                 - xor r9d,r9d
+GameAssembly.dll.il2cpp+18CE621: 4C 8B C3                 - mov r8,rbx
+GameAssembly.dll.il2cpp+18CE624: 48 8B D7                 - mov rdx,rdi
+GameAssembly.dll.il2cpp+18CE627: 48 8B CE                 - mov rcx,rsi
+GameAssembly.dll.il2cpp+18CE62A: E8 11 03 00 00           - call GameAssembly.dll.il2cpp+18CE940
+GameAssembly.dll.il2cpp+18CE62F: 48 8B 0D CA DE BE 01     - mov rcx,[GameAssembly.dll.data+AF500]
+GameAssembly.dll.il2cpp+18CE636: 44 0F B6 36              - movzx r14d,byte ptr [rsi]
+GameAssembly.dll.il2cpp+18CE63A: 0F B6 E8                 - movzx ebp,al
+GameAssembly.dll.il2cpp+18CE63D: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll.il2cpp+18CE644: 75 05                    - jne GameAssembly.dll.il2cpp+18CE64B
+}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"more gold"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Game   : Windblown.exe
+  Version: 
+  Date   : 2024-10-25
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(Add_Gold,GameAssembly.dll,48 8B 9C 24 80 00 00 00 66) // should be unique
+alloc(newmem,$1000,Add_Gold)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  mov rbx,[rsp+00000080]
+  shl bp, 4
+  jmp return
+
+Add_Gold:
+  jmp newmem
+  nop 3
+return:
+registersymbol(Add_Gold)
+
+[DISABLE]
+
+Add_Gold:
+  db 48 8B 9C 24 80 00 00 00
+
+unregistersymbol(Add_Gold)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll.il2cpp+18EC1F8
+
+GameAssembly.dll.il2cpp+18EC1C5: 41 83 FE 08              - cmp r14d,08
+GameAssembly.dll.il2cpp+18EC1C9: 0F 87 FA 00 00 00        - ja GameAssembly.dll.il2cpp+18EC2C9
+GameAssembly.dll.il2cpp+18EC1CF: 48 8D 15 2A 0E 2B FE     - lea rdx,[GameAssembly.dll]
+GameAssembly.dll.il2cpp+18EC1D6: 42 8B 8C B2 2C F3 D4 01  - mov ecx,[rdx+r14*4+01D4F32C]
+GameAssembly.dll.il2cpp+18EC1DE: 48 03 CA                 - add rcx,rdx
+GameAssembly.dll.il2cpp+18EC1E1: FF E1                    - jmp rcx
+GameAssembly.dll.il2cpp+18EC1E3: 48 8B 0D D6 8B BE 01     - mov rcx,[GameAssembly.dll.data+C7DC0]
+GameAssembly.dll.il2cpp+18EC1EA: 83 B9 E0 00 00 00 00     - cmp dword ptr [rcx+000000E0],00
+GameAssembly.dll.il2cpp+18EC1F1: 75 05                    - jne GameAssembly.dll.il2cpp+18EC1F8
+GameAssembly.dll.il2cpp+18EC1F3: E8 48 6E 69 FE           - call GameAssembly.il2cpp_runtime_class_init
+// ---------- INJECTING HERE ----------
+GameAssembly.dll.il2cpp+18EC1F8: 48 8B 9C 24 80 00 00 00  - mov rbx,[rsp+00000080]
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll.il2cpp+18EC200: 66 03 6B 04              - add bp,[rbx+04]
+GameAssembly.dll.il2cpp+18EC204: 66 89 6B 04              - mov [rbx+04],bp
+GameAssembly.dll.il2cpp+18EC208: 48 85 F6                 - test rsi,rsi
+GameAssembly.dll.il2cpp+18EC20B: 0F 84 15 01 00 00        - je GameAssembly.dll.il2cpp+18EC326
+GameAssembly.dll.il2cpp+18EC211: 48 8D 8E B0 01 00 00     - lea rcx,[rsi+000001B0]
+GameAssembly.dll.il2cpp+18EC218: 45 33 C9                 - xor r9d,r9d
+GameAssembly.dll.il2cpp+18EC21B: 44 0F B7 C5              - movzx r8d,bp
+GameAssembly.dll.il2cpp+18EC21F: 48 8B D7                 - mov rdx,rdi
+GameAssembly.dll.il2cpp+18EC222: E8 49 8D 08 00           - call GameAssembly.dll.il2cpp+1974F70
+GameAssembly.dll.il2cpp+18EC227: 44 0F B7 43 04           - movzx r8d,word ptr [rbx+04]
+}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>3</ID>
+      <Description>"no_inc_roll"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Game   : Windblown.exe
+  Version: 
+  Date   : 2024-10-25
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(inc_reroll,GameAssembly.dll,FE 00 4C 8B AC 24 E0 00 00 00) // should be unique
+alloc(newmem,$1000,inc_reroll)
+
+label(code)
+label(return)
+
+newmem:
+
+code:
+  // inc byte ptr [rax]
+  mov [rax], 0
+  mov r13,[rsp+000000E0]
+  jmp return
+
+inc_reroll:
+  jmp newmem
+  nop 5
+return:
+registersymbol(inc_reroll)
+
+[DISABLE]
+
+inc_reroll:
+  db FE 00 4C 8B AC 24 E0 00 00 00
+
+unregistersymbol(inc_reroll)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: GameAssembly.dll.il2cpp+1917D04
+
+GameAssembly.dll.il2cpp+1917CDE: 0F 11 45 D7              - movups [rbp-29],xmm0
+GameAssembly.dll.il2cpp+1917CE2: 4D 85 FF                 - test r15,r15
+GameAssembly.dll.il2cpp+1917CE5: 74 46                    - je GameAssembly.dll.il2cpp+1917D2D
+GameAssembly.dll.il2cpp+1917CE7: 41 8B 4F 48              - mov ecx,[r15+48]
+GameAssembly.dll.il2cpp+1917CEB: 33 D2                    - xor edx,edx
+GameAssembly.dll.il2cpp+1917CED: E8 8E AE 1E 00           - call GameAssembly.dll.il2cpp+1B02B80
+GameAssembly.dll.il2cpp+1917CF2: 4C 8B 05 DF 92 B9 01     - mov r8,[GameAssembly.dll.data+A3FD8]
+GameAssembly.dll.il2cpp+1917CF9: 48 8D 4D D7              - lea rcx,[rbp-29]
+GameAssembly.dll.il2cpp+1917CFD: 8B D0                    - mov edx,eax
+GameAssembly.dll.il2cpp+1917CFF: E8 6C 6F A0 FF           - call GameAssembly.dll.il2cpp+131EC70
+// ---------- INJECTING HERE ----------
+GameAssembly.dll.il2cpp+1917D04: FE 00                    - inc byte ptr [rax]
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll.il2cpp+1917D06: 4C 8B AC 24 E0 00 00 00  - mov r13,[rsp+000000E0]
+GameAssembly.dll.il2cpp+1917D0E: 4C 8B BC 24 F0 00 00 00  - mov r15,[rsp+000000F0]
+GameAssembly.dll.il2cpp+1917D16: 48 8B 9C 24 F8 00 00 00  - mov rbx,[rsp+000000F8]
+GameAssembly.dll.il2cpp+1917D1E: 48 81 C4 B0 00 00 00     - add rsp,000000B0
+GameAssembly.dll.il2cpp+1917D25: 41 5E                    - pop r14
+GameAssembly.dll.il2cpp+1917D27: 41 5C                    - pop r12
+GameAssembly.dll.il2cpp+1917D29: 5F                       - pop rdi
+GameAssembly.dll.il2cpp+1917D2A: 5E                       - pop rsi
+GameAssembly.dll.il2cpp+1917D2B: 5D                       - pop rbp
+GameAssembly.dll.il2cpp+1917D2C: C3                       - ret 
+}
+</AssemblerScript>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

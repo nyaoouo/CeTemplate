@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Mono_Method1,%x)
+define(_Mono_Method2,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","Mono","Method1"),
+    findMonoFunction("","Mono","Method2","int,int,int") -- or pass a sign
+  )
+end
+{$asm}
+alloc(mono_patch_alloc,1024,_Mono_Method1)
+label(mono_patch_backup)
+label(mono_patch_code)
+label(mono_patch_return)
+
+mono_patch_alloc:
+mono_patch_code:
+  mov eax, ecx
+mono_patch_backup:
+  readmem(_Mono_Method1,6) // hook inst
+  jmp mono_patch_return
+
+_Mono_Method1:
+  jmp mono_patch_code  // near jump cost size 5
+  nop 1  // pad
+mono_patch_return:
+
+registersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+ 
+ 
+[DISABLE]
+_Mono_Method1:
+  readmem(mono_patch_backup,6)
+
+dealloc(mono_patch_alloc)
+unregistersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(AsmPatch_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    aobScanModule("AsmPatch_at","ProcessName.exe","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+  )
+end
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+function ensure_monopipe()
+  if monopipe then
+    return monopipe
+  end
+  if LaunchMonoDataCollector() == 0 then
+    error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+  end
+  if monopipe then
+    return monopipe
+  end
+  error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+end
+
+function findMonoFunction(namespace, cls, method, sign)
+  ensure_monopipe()
+  local methods = mono_class_enumMethods(mono_findClass(namespace,cls))
+  for i = 1,#methods do
+    if methods[i].name == method then
+      if sign == nil or mono_method_getSignature(methods[i].method) == sign then
+        return mono_compile_method(methods[i].method)
+      end
+    end
+  end
+  error(("cannot find method %s:%s:%s with sign "):format(namespace,cls,method,sign))
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('Shape of Dreams.exe')
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"NoStarDustCost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_UI_Constellations_StarItem_get_requiredStardust,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","UI_Constellations_StarItem","get_requiredStardust")
+  )
+end
+{$asm}
+alloc(NoStarDustCost_alloc,1024,_UI_Constellations_StarItem_get_requiredStardust)
+label(NoStarDustCost_backup)
+label(NoStarDustCost_code)
+label(NoStarDustCost_return)
+
+NoStarDustCost_alloc:
+NoStarDustCost_code:
+  xor eax, eax
+  ret
+NoStarDustCost_backup:
+  readmem(_UI_Constellations_StarItem_get_requiredStardust,8) // hook inst
+  jmp NoStarDustCost_return
+
+_UI_Constellations_StarItem_get_requiredStardust:
+  jmp NoStarDustCost_code  // near jump cost size 5
+  nop 3  // pad
+NoStarDustCost_return:
+
+registersymbol(_UI_Constellations_StarItem_get_requiredStardust,NoStarDustCost_alloc,NoStarDustCost_backup)
+ 
+ 
+[DISABLE]
+_UI_Constellations_StarItem_get_requiredStardust:
+  readmem(NoStarDustCost_backup,8)
+
+dealloc(NoStarDustCost_alloc)
+unregistersymbol(_UI_Constellations_StarItem_get_requiredStardust,NoStarDustCost_alloc,NoStarDustCost_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114072</ID>
+          <Description>"NoUpgradeCostGem"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Shrine_UpgradeWell_GetDreamDustCost_Gem,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","Shrine_UpgradeWell","GetDreamDustCost","Gem")
+  )
+end
+{$asm}
+alloc(NoUpgradeCostGem_alloc,1024,_Shrine_UpgradeWell_GetDreamDustCost_Gem)
+label(NoUpgradeCostGem_backup)
+label(NoUpgradeCostGem_code)
+label(NoUpgradeCostGem_return)
+
+NoUpgradeCostGem_alloc:
+NoUpgradeCostGem_code:
+  mov eax, 0
+  ret
+NoUpgradeCostGem_backup:
+  readmem(_Shrine_UpgradeWell_GetDreamDustCost_Gem,8) // hook inst
+  jmp NoUpgradeCostGem_return
+
+_Shrine_UpgradeWell_GetDreamDustCost_Gem:
+  jmp NoUpgradeCostGem_code  // near jump cost size 5
+  nop 3  // pad
+NoUpgradeCostGem_return:
+
+registersymbol(_Shrine_UpgradeWell_GetDreamDustCost_Gem,NoUpgradeCostGem_alloc,NoUpgradeCostGem_backup)
+ 
+ 
+[DISABLE]
+_Shrine_UpgradeWell_GetDreamDustCost_Gem:
+  readmem(NoUpgradeCostGem_backup,8)
+
+dealloc(NoUpgradeCostGem_alloc)
+unregistersymbol(_Shrine_UpgradeWell_GetDreamDustCost_Gem,NoUpgradeCostGem_alloc,NoUpgradeCostGem_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114073</ID>
+          <Description>"NoUpgradeCostSkill"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Shrine_UpgradeWell_GetDreamDustCost_Skill,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","Shrine_UpgradeWell","GetDreamDustCost","SkillTrigger")
+  )
+end
+{$asm}
+alloc(NoUpgradeCostSkill_alloc,1024,_Shrine_UpgradeWell_GetDreamDustCost_Skill)
+label(NoUpgradeCostSkill_backup)
+label(NoUpgradeCostSkill_code)
+label(NoUpgradeCostSkill_return)
+
+NoUpgradeCostSkill_alloc:
+NoUpgradeCostSkill_code:
+  mov eax, 0
+  ret
+NoUpgradeCostSkill_backup:
+  readmem(_Shrine_UpgradeWell_GetDreamDustCost_Skill,8) // hook inst
+  jmp NoUpgradeCostSkill_return
+
+_Shrine_UpgradeWell_GetDreamDustCost_Skill:
+  jmp NoUpgradeCostSkill_code  // near jump cost size 5
+  nop 3  // pad
+NoUpgradeCostSkill_return:
+
+registersymbol(_Shrine_UpgradeWell_GetDreamDustCost_Skill,NoUpgradeCostSkill_alloc,NoUpgradeCostSkill_backup)
+ 
+ 
+[DISABLE]
+_Shrine_UpgradeWell_GetDreamDustCost_Skill:
+  readmem(NoUpgradeCostSkill_backup,8)
+
+dealloc(NoUpgradeCostSkill_alloc)
+unregistersymbol(_Shrine_UpgradeWell_GetDreamDustCost_Skill,NoUpgradeCostSkill_alloc,NoUpgradeCostSkill_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114075</ID>
+          <Description>"InfShopRefresh"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_PropEnt_Merchant_Shop_CanRefresh,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","PropEnt_Merchant_Base","CanRefresh")
+  )
+end
+{$asm}
+alloc(InfShopRefresh_alloc,1024,_PropEnt_Merchant_Shop_CanRefresh)
+label(InfShopRefresh_backup)
+label(InfShopRefresh_code)
+label(InfShopRefresh_return)
+
+InfShopRefresh_alloc:
+InfShopRefresh_code:
+  mov eax ,1
+  ret
+InfShopRefresh_backup:
+  readmem(_PropEnt_Merchant_Shop_CanRefresh,8) // hook inst
+  jmp InfShopRefresh_return
+
+_PropEnt_Merchant_Shop_CanRefresh:
+  jmp InfShopRefresh_code  // near jump cost size 5
+  nop 3  // pad
+InfShopRefresh_return:
+
+registersymbol(_PropEnt_Merchant_Shop_CanRefresh,InfShopRefresh_alloc,InfShopRefresh_backup)
+ 
+ 
+[DISABLE]
+_PropEnt_Merchant_Shop_CanRefresh:
+  readmem(InfShopRefresh_backup,8)
+
+dealloc(InfShopRefresh_alloc)
+unregistersymbol(_PropEnt_Merchant_Shop_CanRefresh,InfShopRefresh_alloc,InfShopRefresh_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114076</ID>
+          <Description>"NoShopRefreshCost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_PropEnt_Merchant_Shop_GetRefreshCost,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","PropEnt_Merchant_Base","GetRefreshGoldCost")
+  )
+end
+{$asm}
+alloc(NoShopRefreshCost_alloc,1024,_PropEnt_Merchant_Shop_GetRefreshCost)
+label(NoShopRefreshCost_backup)
+label(NoShopRefreshCost_code)
+label(NoShopRefreshCost_return)
+
+NoShopRefreshCost_alloc:
+NoShopRefreshCost_code:
+  xor eax ,eax
+  ret
+NoShopRefreshCost_backup:
+  readmem(_PropEnt_Merchant_Shop_GetRefreshCost,8) // hook inst
+  jmp NoShopRefreshCost_return
+
+_PropEnt_Merchant_Shop_GetRefreshCost:
+  jmp NoShopRefreshCost_code  // near jump cost size 5
+  nop 3  // pad
+NoShopRefreshCost_return:
+
+registersymbol(_PropEnt_Merchant_Shop_GetRefreshCost,NoShopRefreshCost_alloc,NoShopRefreshCost_backup)
+ 
+ 
+[DISABLE]
+_PropEnt_Merchant_Shop_GetRefreshCost:
+  readmem(NoShopRefreshCost_backup,8)
+
+dealloc(NoShopRefreshCost_alloc)
+unregistersymbol(_PropEnt_Merchant_Shop_GetRefreshCost,NoShopRefreshCost_alloc,NoShopRefreshCost_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114077</ID>
+          <Description>"NoShopCostGem"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Gem_GetBuyGold,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","Gem","GetBuyGold","DewPlayer,Rarity,int")
+  )
+end
+{$asm}
+alloc(NoShopCostGem_alloc,1024,_Gem_GetBuyGold)
+label(NoShopCostGem_backup)
+label(NoShopCostGem_code)
+label(NoShopCostGem_return)
+
+NoShopCostGem_alloc:
+NoShopCostGem_code:
+  mov eax, 1
+  ret
+NoShopCostGem_backup:
+  readmem(_Gem_GetBuyGold,8) // hook inst
+  jmp NoShopCostGem_return
+
+_Gem_GetBuyGold:
+  jmp NoShopCostGem_code  // near jump cost size 5
+  nop 3  // pad
+NoShopCostGem_return:
+
+registersymbol(_Gem_GetBuyGold,NoShopCostGem_alloc,NoShopCostGem_backup)
+ 
+ 
+[DISABLE]
+_Gem_GetBuyGold:
+  readmem(NoShopCostGem_backup,8)
+
+dealloc(NoShopCostGem_alloc)
+unregistersymbol(_Gem_GetBuyGold,NoShopCostGem_alloc,NoShopCostGem_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114078</ID>
+          <Description>"NoShopCostSkill"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_SkillTrigger_GetBuyGold,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","SkillTrigger","GetBuyGold","DewPlayer,Rarity,int")
+  )
+end
+{$asm}
+alloc(NoShopCostSkill_alloc,1024,_SkillTrigger_GetBuyGold)
+label(NoShopCostSkill_backup)
+label(NoShopCostSkill_code)
+label(NoShopCostSkill_return)
+
+NoShopCostSkill_alloc:
+NoShopCostSkill_code:
+  mov eax, 1
+  ret
+NoShopCostSkill_backup:
+  readmem(_SkillTrigger_GetBuyGold,8) // hook inst
+  jmp NoShopCostSkill_return
+
+_SkillTrigger_GetBuyGold:
+  jmp NoShopCostSkill_code  // near jump cost size 5
+  nop 3  // pad
+NoShopCostSkill_return:
+
+registersymbol(_SkillTrigger_GetBuyGold,NoShopCostSkill_alloc,NoShopCostSkill_backup)
+ 
+ 
+[DISABLE]
+_SkillTrigger_GetBuyGold:
+  readmem(NoShopCostSkill_backup,8)
+
+dealloc(NoShopCostSkill_alloc)
+unregistersymbol(_SkillTrigger_GetBuyGold,NoShopCostSkill_alloc,NoShopCostSkill_backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114079</ID>
+          <Description>"FixLootRarity"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Loot_SelectRarity,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","Loot","SelectRarity")
+  )
+end
+{$asm}
+alloc(FixLootRarity_alloc,1024,_Loot_SelectRarity)
+label(FixLootRarity_backup)
+label(FixLootRarity_code)
+label(FixLootRarity_return)
+label(FixLootRarity_val)
+
+FixLootRarity_alloc:
+FixLootRarity_val:
+  dq 3
+FixLootRarity_code:
+  mov eax, [FixLootRarity_val]
+  ret
+FixLootRarity_backup:
+  readmem(_Loot_SelectRarity,8) // hook inst
+  jmp FixLootRarity_return
+
+_Loot_SelectRarity:
+  jmp FixLootRarity_code  // near jump cost size 5
+  nop 3  // pad
+FixLootRarity_return:
+
+registersymbol(_Loot_SelectRarity,FixLootRarity_alloc,FixLootRarity_backup,FixLootRarity_val)
+ 
+ 
+[DISABLE]
+_Loot_SelectRarity:
+  readmem(FixLootRarity_backup,8)
+
+dealloc(FixLootRarity_alloc)
+unregistersymbol(_Loot_SelectRarity,FixLootRarity_alloc,FixLootRarity_backup,FixLootRarity_val)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114080</ID>
+              <Description>"type"</Description>
+              <DropDownList DisplayValueAsItem="1">0:Common
+1:Rare
+2:Epic
+3:Legendary
+4:Character
+5:Identity
+</DropDownList>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>FixLootRarity_val</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

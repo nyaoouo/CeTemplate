@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"init"</Description>
+      <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach("Yog-Sothoth's Yard.exe")
+end
+
+main()
+
+
+[DISABLE]
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>1</ID>
+          <Description>"no cost action"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Yog-Sothoth's Yard.exe
+  Version: 
+  Date   : 2024-11-24
+  Author : ny
+
+  This script does blah blah blah
+}
+
+[ENABLE]
+
+aobscanmodule(CostActionPoint,GameAssembly.dll,48 89 5C 24 20 55 48 83 EC 30 80 3D * * * * 00 48 8B E9 48) // should be unique
+alloc(newmem,$1000,CostActionPoint)
+
+label(code)
+label(return)
+
+newmem:
+  retn
+code:
+  mov [rsp+20],rbx
+  jmp return
+
+CostActionPoint:
+  jmp newmem
+return:
+registersymbol(CostActionPoint)
+
+[DISABLE]
+
+CostActionPoint:
+  db 48 89 5C 24 20
+
+unregistersymbol(CostActionPoint)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: HotelModule.HotelAttributes.CostActionPoint
+
+GameAssembly.dll.il2cpp+3BEEC6: CC                    - int 3 
+GameAssembly.dll.il2cpp+3BEEC7: CC                    - int 3 
+GameAssembly.dll.il2cpp+3BEEC8: CC                    - int 3 
+GameAssembly.dll.il2cpp+3BEEC9: CC                    - int 3 
+GameAssembly.dll.il2cpp+3BEECA: CC                    - int 3 
+GameAssembly.dll.il2cpp+3BEECB: CC                    - int 3 
+GameAssembly.dll.il2cpp+3BEECC: CC                    - int 3 
+GameAssembly.dll.il2cpp+3BEECD: CC                    - int 3 
+GameAssembly.dll.il2cpp+3BEECE: CC                    - int 3 
+GameAssembly.dll.il2cpp+3BEECF: CC                    - int 3 
+// ---------- INJECTING HERE ----------
+HotelModule.HotelAttributes.CostActionPoint: 48 89 5C 24 20        - mov [rsp+20],rbx
+// ---------- DONE INJECTING  ----------
+GameAssembly.dll.il2cpp+3BEED5: 55                    - push rbp
+GameAssembly.dll.il2cpp+3BEED6: 48 83 EC 30           - sub rsp,30
+GameAssembly.dll.il2cpp+3BEEDA: 80 3D 44 F8 EF 00 00  - cmp byte ptr [GameAssembly.dll+14BD725],00
+GameAssembly.dll.il2cpp+3BEEE1: 48 8B E9              - mov rbp,rcx
+GameAssembly.dll.il2cpp+3BEEE4: 48 63 DA              - movsxd  rbx,edx
+GameAssembly.dll.il2cpp+3BEEE7: 75 37                 - jne GameAssembly.dll.il2cpp+3BEF20
+GameAssembly.dll.il2cpp+3BEEE9: 48 8D 0D 68 D7 EA 00  - lea rcx,[GameAssembly.dll.data+E4658]
+GameAssembly.dll.il2cpp+3BEEF0: E8 1B DC C0 FF        - call GameAssembly.dll.text+1CAB10
+GameAssembly.dll.il2cpp+3BEEF5: 48 8D 0D C4 0B EE 00  - lea rcx,[GameAssembly.dll.data+117AC0]
+GameAssembly.dll.il2cpp+3BEEFC: E8 0F DC C0 FF        - call GameAssembly.dll.text+1CAB10
+}
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+  <Comments>Info about this table:
+</Comments>
+</CheatTable>

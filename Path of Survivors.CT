@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>1</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+function findMonoFunctionWithSign(namespace, cls, method, sign)
+  local methods = mono_class_enumMethods(mono_findClass(namespace,cls))
+  for i = 1,#methods do
+    if methods[i].name == method then
+      if mono_method_getSignature(methods[i].method) == sign then
+        return mono_compile_method(methods[i].method)
+      end
+    end
+  end
+  error(("cannot find method %s:%s:%s with sign "):format(namespace,cls,method,sign))
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('Path of Survivors.exe')
+    if not monopipe then
+      if LaunchMonoDataCollector() == 0 then
+        error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+      end
+    end
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"StatRollMax"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_StatGetMinNL_At,%x)
+define(_StatGetMin_At,%x)
+define(_StatGetMax_At,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0,0)
+else
+  local _StatGetMinNL_At = mono_compile_method(mono_findMethod("_LimitedInput.Scripts.Managers","JsonStatRuntime","MinValueNonLevel"))
+  local _StatGetMin_At = mono_compile_method(mono_findMethod("_LimitedInput.Scripts.Managers","JsonStatRuntime","MinValue"))
+  local _StatGetMax_At = mono_compile_method(mono_findMethod("_LimitedInput.Scripts.Managers","JsonStatRuntime","MaxValue"))
+  if _StatGetMinNL_At == nil then error("_LimitedInput.Scripts.Managers:JsonStatRuntime:MinValueNonLevel not found") end
+  if _StatGetMin_At == nil then error("_LimitedInput.Scripts.Managers:JsonStatRuntime:MinValue not found") end
+  if _StatGetMax_At == nil then error("_LimitedInput.Scripts.Managers:JsonStatRuntime:MaxValue not found") end
+  return defs:format(_StatGetMinNL_At,_StatGetMin_At,_StatGetMax_At)
+end
+{$asm}
+alloc(StatRollMax_alloc, 1000)
+
+StatRollMax_alloc:
+readmem(_StatGetMin_At,5)
+readmem(_StatGetMinNL_At,5)
+
+_StatGetMin_At:
+jmp _StatGetMax_At
+_StatGetMinNL_At:
+jmp _StatGetMax_At
+
+registersymbol(StatRollMax_alloc,_StatGetMax_At,_StatGetMin_At,_StatGetMinNL_At)
+
+[DISABLE]
+_StatGetMin_At:
+readmem(StatRollMax_alloc,5)
+_StatGetMinNL_At:
+readmem(StatRollMax_alloc+5,5)
+
+dealloc(StatRollMax_alloc)
+unregistersymbol(StatRollMax_alloc,_StatGetMax_At,_StatGetMin_At,_StatGetMinNL_At)
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

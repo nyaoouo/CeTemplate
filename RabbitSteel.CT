@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"init"</Description>
+      <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('RabbitSteel.exe')
+end
+
+main()
+
+
+[DISABLE]
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>1</ID>
+          <Description>"NoPlayerDecHp"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(PlayerDecHp_At,0)' end
+return ('define(PlayerDecHp_At,%016X)'):format(aobScanModule(nil,"RabbitSteel.exe",
+  "48 ? ? e8 ? ? ? ? 8b ? 48 ? ? e8 ? ? ? ? 48 ? ? 48 ? ? e8 ? ? ? ? 48 ? ? ? 48 ? ? e8 ? ? ? ? b9 ? ? ? ? e8 ? ? ? ? c7 44 24 ? ? ? ? ? 8b"
+)+0x24)
+{$asm}
+alloc(PlayerDecHp_Alloc,$1000,PlayerDecHp_At)
+label(PlayerDecHp_Backup)
+
+PlayerDecHp_Alloc:
+PlayerDecHp_Backup:
+  readmem(PlayerDecHp_At,5)
+
+PlayerDecHp_At:
+  nop 5
+
+registersymbol(PlayerDecHp_At,PlayerDecHp_Alloc,PlayerDecHp_Backup)
+
+[DISABLE]
+PlayerDecHp_At:
+  readmem(PlayerDecHp_Backup,5)
+
+dealloc(PlayerDecHp_Alloc)
+unregistersymbol(PlayerDecHp_At,PlayerDecHp_Alloc,PlayerDecHp_Backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"NoCd"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+aobscanmodule(SkillCdSet_At,RabbitSteel.exe,0f 8e ? ? ? ? 8b ? 65)
+alloc(SkillCdSet_Alloc,$1000,SkillCdSet_At)
+label(SkillCdSet_Backup)
+
+SkillCdSet_Alloc:
+SkillCdSet_Backup:
+  readmem(SkillCdSet_At,6)
+
+SkillCdSet_At:
+  db 90 e9
+
+registersymbol(SkillCdSet_At,SkillCdSet_Alloc,SkillCdSet_Backup)
+
+[DISABLE]
+SkillCdSet_At:
+  readmem(SkillCdSet_Backup,6)
+
+dealloc(SkillCdSet_Alloc)
+unregistersymbol(SkillCdSet_At,SkillCdSet_Alloc,SkillCdSet_Backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>3</ID>
+          <Description>"ShopNoCost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(ShopCost_At,0)' end
+return ('define(ShopCost_At,%016X)'):format(aobScanModule(nil,"RabbitSteel.exe",
+  "48 ? ? ? e8 ? ? ? ? 48 ? ? 48 ? ? e8 ? ? ? ? b9 ? ? ? ? e8 ? ? ? ? c7 44 24 ? ? ? ? ? 8b ? ? ? 83 ? ? 41 ? ?"
+)+0xf)
+{$asm}
+alloc(ShopCost_Alloc,$1000,ShopCost_At)
+label(ShopCost_Backup)
+
+ShopCost_Alloc:
+ShopCost_Backup:
+  readmem(ShopCost_At,5)
+
+ShopCost_At:
+  nop 5
+
+registersymbol(ShopCost_At,ShopCost_Alloc,ShopCost_Backup)
+
+[DISABLE]
+ShopCost_At:
+  readmem(ShopCost_Backup,5)
+
+dealloc(ShopCost_Alloc)
+unregistersymbol(ShopCost_At,ShopCost_Alloc,ShopCost_Backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5</ID>
+          <Description>"OverrideMoveSpeed"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(OnGetMoveSpeed_At,0)' end
+return ('define(OnGetMoveSpeed_At,%016X)'):format(aobScanModule(nil,"RabbitSteel.exe",
+    "c7 45 ? ? ? ? ? 48 ? ? ? 48 ? ? ? e8 ? ? ? ? c7 45 ? ? ? ? ? 48 ? ? ? ? ? ? 48"
+))
+{$asm}
+alloc(OnGetMoveSpeed_Alloc,$1000,OnGetMoveSpeed_At)
+label(OnGetMoveSpeed_Backup)
+label(OnGetMoveSpeed_Code)
+label(OnGetMoveSpeed_Orig)
+label(OnGetMoveSpeed_Return)
+label(OnGetMoveSpeed_OrigVal)
+label(OnGetMoveSpeed_NewVal)
+label(minus_one)
+
+OnGetMoveSpeed_Alloc:
+  OnGetMoveSpeed_OrigVal:
+  dq (double)0
+  OnGetMoveSpeed_NewVal:
+  dq (double)-1
+  minus_one:
+  dq (double)-1
+  OnGetMoveSpeed_Backup:
+  readmem(OnGetMoveSpeed_At,7)
+  OnGetMoveSpeed_Code:
+  mov rcx, [rax]
+  mov [OnGetMoveSpeed_OrigVal], rcx
+  mov rcx, [OnGetMoveSpeed_NewVal]
+  cmp rcx, [minus_one]
+  je OnGetMoveSpeed_Orig
+  mov [rax], rcx
+  OnGetMoveSpeed_Orig:
+  readmem(OnGetMoveSpeed_At,7)
+  jmp OnGetMoveSpeed_Return
+
+OnGetMoveSpeed_At:
+  jmp OnGetMoveSpeed_Code
+  nop 2
+  OnGetMoveSpeed_Return:
+
+registersymbol(OnGetMoveSpeed_At,OnGetMoveSpeed_Alloc,OnGetMoveSpeed_Backup,OnGetMoveSpeed_OrigVal,OnGetMoveSpeed_NewVal)
+
+[DISABLE]
+OnGetMoveSpeed_At:
+  readmem(OnGetMoveSpeed_Backup,7)
+
+dealloc(OnGetMoveSpeed_Alloc)
+unregistersymbol(OnGetMoveSpeed_At,OnGetMoveSpeed_Alloc,OnGetMoveSpeed_Backup,OnGetMoveSpeed_OrigVal,OnGetMoveSpeed_NewVal)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>6</ID>
+              <Description>"orig_value"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Double</VariableType>
+              <Address>OnGetMoveSpeed_OrigVal</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>7</ID>
+              <Description>"override_val"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Double</VariableType>
+              <Address>OnGetMoveSpeed_NewVal</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>8</ID>
+          <Description>"NoSlowDown"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(OnGetMoveSpeedMult_At,0)' end
+return ('define(OnGetMoveSpeedMult_At,%016X)'):format(aobScanModule(nil,"RabbitSteel.exe",
+    "c7 45 ? ? ? ? ? 48 ? ? 8b ? ? ? ? ? ff 50 ? 48 ? ? 48 ? ? ? e8 ? ? ? ? c7 45 ? ? ? ? ?"
+)+0x1f)
+{$asm}
+alloc(OnGetMoveSpeedMult_Alloc,$1000,OnGetMoveSpeedMult_At)
+label(OnGetMoveSpeedMult_Backup)
+label(OnGetMoveSpeedMult_Code)
+label(OnGetMoveSpeedMult_Orig)
+label(OnGetMoveSpeedMult_Return)
+label(double_one)
+
+OnGetMoveSpeedMult_Alloc:
+  double_one:
+  dq (double)1
+  OnGetMoveSpeedMult_Backup:
+  readmem(OnGetMoveSpeedMult_At,7)
+  OnGetMoveSpeedMult_Code:
+  sub rsp, 10
+  movdqu [rsp], xmm0
+  sub rsp, 10
+  movdqu [rsp], xmm1
+
+  movsd xmm0, [rax]
+  movsd xmm1, [double_one]
+  ucomisd xmm0,xmm1
+  ja OnGetMoveSpeedMult_Orig
+  movsd [rax], xmm1
+
+  OnGetMoveSpeedMult_Orig:
+  movdqu xmm1, [rsp]
+  add rsp, 10
+  movdqu xmm0, [rsp]
+  add rsp, 10
+  readmem(OnGetMoveSpeedMult_At,7)
+  jmp OnGetMoveSpeedMult_Return
+
+OnGetMoveSpeedMult_At:
+  jmp OnGetMoveSpeedMult_Code
+  nop 2
+  OnGetMoveSpeedMult_Return:
+
+registersymbol(OnGetMoveSpeedMult_At,OnGetMoveSpeedMult_Alloc,OnGetMoveSpeedMult_Backup)
+
+[DISABLE]
+OnGetMoveSpeedMult_At:
+  readmem(OnGetMoveSpeedMult_Backup,7)
+
+dealloc(OnGetMoveSpeedMult_Alloc)
+unregistersymbol(OnGetMoveSpeedMult_At,OnGetMoveSpeedMult_Alloc,OnGetMoveSpeedMult_Backup)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>9</ID>
+          <Description>"ChangeDamageDealt"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return 'define(DmgCalc_At,0)' end
+return ('define(DmgCalc_At,%016X)'):format(aobScanModule(nil,"RabbitSteel.exe",
+  "45 ? ? 4c ? ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? e8 ? ? ? ? 48 ? ? 48 ? ? ? ? e8 ? ? ? ? c7 45 ? ? ? ? ? 8b ? ? ?"
+)+0x28)
+{$asm}
+alloc(DmgCalc_Alloc,$1000,DmgCalc_At)
+label(DmgCalc_Backup)
+label(DmgCalc_Code)
+label(DmgCalc_Orig)
+label(DmgCalc_Return)
+
+label(DmgCalc_ValSet)
+label(DmgCalc_ValMult)
+label(minus_one)
+label(check_not_minus_one)
+
+DmgCalc_Alloc:
+  minus_one:
+  dq (double)-1
+  DmgCalc_ValSet:
+  dq (double)-1
+  DmgCalc_ValMult:
+  dq (double)2
+
+  DmgCalc_Backup:
+  readmem(DmgCalc_At,7)
+  DmgCalc_Code:
+  sub rsp, 10
+  movdqu [rsp], xmm0
+  sub rsp, 10
+  movdqu [rsp], xmm1
+
+  movsd xmm0, [DmgCalc_ValSet]
+  movsd xmm1, [minus_one]
+  ucomisd xmm0, xmm1
+  jne check_not_minus_one
+  movsd xmm0, [rax]
+  mulsd xmm0, [DmgCalc_ValMult]
+  movsd [rax], xmm0
+  jmp DmgCalc_Orig
+  check_not_minus_one:
+  movsd [rax], xmm0
+
+  DmgCalc_Orig:
+  movdqu xmm1, [rsp]
+  add rsp, 10
+  movdqu xmm0, [rsp]
+  add rsp, 10
+  readmem(DmgCalc_At,7)
+  jmp DmgCalc_Return
+
+DmgCalc_At:
+  jmp DmgCalc_Code
+  nop 2
+  DmgCalc_Return:
+
+registersymbol(DmgCalc_At,DmgCalc_Alloc,DmgCalc_Backup,DmgCalc_ValSet,DmgCalc_ValMult)
+
+[DISABLE]
+DmgCalc_At:
+  readmem(DmgCalc_Backup,7)
+
+dealloc(DmgCalc_Alloc)
+unregistersymbol(DmgCalc_At,DmgCalc_Alloc,DmgCalc_Backup,DmgCalc_ValSet,DmgCalc_ValMult)
+
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>10</ID>
+              <Description>"override_value"</Description>
+              <DropDownList DescriptionOnly="1" DisplayValueAsItem="1">-1:no override
+999999:one hit kill
+</DropDownList>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Double</VariableType>
+              <Address>DmgCalc_ValSet</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>11</ID>
+              <Description>"mult_value"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Double</VariableType>
+              <Address>DmgCalc_ValMult</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+  <Comments>Info about this table:
+</Comments>
+</CheatTable>
