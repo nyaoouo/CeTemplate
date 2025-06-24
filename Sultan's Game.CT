@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Mono_Method1,%x)
+define(_Mono_Method2,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","Mono","Method1"),
+    findMonoFunction("","Mono","Method2","int,int,int") -- or pass a sign
+  )
+end
+{$asm}
+alloc(mono_patch_alloc,1024,_Mono_Method1)
+label(mono_patch_backup)
+label(mono_patch_code)
+label(mono_patch_return)
+
+mono_patch_alloc:
+mono_patch_code:
+  mov eax, ecx
+mono_patch_backup:
+  readmem(_Mono_Method1,6) // hook inst
+  jmp mono_patch_return
+
+_Mono_Method1:
+  jmp mono_patch_code  // near jump cost size 5
+  nop 1  // pad
+mono_patch_return:
+
+registersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+ 
+ 
+[DISABLE]
+_Mono_Method1:
+  readmem(mono_patch_backup,6)
+
+dealloc(mono_patch_alloc)
+unregistersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(AsmPatch_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    aobScanModule("AsmPatch_at","ProcessName.exe","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+  )
+end
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+function ensure_monopipe()
+  if monopipe then return monopipe end
+  LaunchMonoDataCollector()
+  if monopipe then return monopipe end
+  error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+end
+
+function findMonoFunction(namespace, cls, method, sign)
+  ensure_monopipe()
+  local methods = mono_class_enumMethods(mono_findClass(namespace,cls))
+  for i = 1,#methods do
+    if methods[i].name == method then
+      if sign == nil or mono_method_getSignature(methods[i].method) == sign then
+        return mono_compile_method(methods[i].method)
+      end
+    end
+  end
+  error(("cannot find method %s:%s:%s with sign "):format(namespace,cls,method,sign))
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach("Sultan's Game.exe")
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"LastSetCount"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Card_set_count,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunction("","Card","set_count")
+  )
+end
+{$asm}
+alloc(set_card_count_alloc,1024,_Card_set_count)
+label(set_card_count_backup)
+label(set_card_count_code)
+label(set_card_count_return)
+label(set_card_count_val)
+
+set_card_count_alloc:
+set_card_count_val:
+  dq 0
+set_card_count_code:
+  mov [set_card_count_val], rcx
+set_card_count_backup:
+  readmem(_Card_set_count,6) // hook inst
+  jmp set_card_count_return
+
+_Card_set_count:
+  jmp set_card_count_code  // near jump cost size 5
+  nop 1  // pad
+set_card_count_return:
+
+registersymbol(_Card_set_count,set_card_count_alloc,set_card_count_backup,set_card_count_val)
+ 
+ 
+[DISABLE]
+_Card_set_count:
+  readmem(set_card_count_backup,6)
+
+dealloc(set_card_count_alloc)
+unregistersymbol(_Card_set_count,set_card_count_alloc,set_card_count_backup,set_card_count_val)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114072</ID>
+              <Description>"card"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>8 Bytes</VariableType>
+              <Address>set_card_count_val</Address>
+              <Offsets>
+                <Offset>10</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>114074</ID>
+                  <Description>"uid"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+8</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114075</ID>
+                  <Description>"id"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+c</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114073</ID>
+                  <Description>"count"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+10</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114076</ID>
+                  <Description>"bag"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+38</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>114077</ID>
+                  <Description>"pos"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+3c</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114078</ID>
+          <Description>"inf_reroll_sudan"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_PlayerExtensions__GetSudanRedrawCount,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunction("","PlayerExtensions","GetSudanRedrawCount")
+  )
+end
+{$asm}
+alloc(inf_reroll_sudan_alloc,1024,_PlayerExtensions__GetSudanRedrawCount)
+label(inf_reroll_sudan_backup)
+label(inf_reroll_sudan_code)
+label(inf_reroll_sudan_return)
+label(inf_reroll_sudan_val)
+
+inf_reroll_sudan_alloc:
+inf_reroll_sudan_val:
+inf_reroll_sudan_code:
+  mov eax, 99
+  ret
+inf_reroll_sudan_backup:
+  readmem(_PlayerExtensions__GetSudanRedrawCount,6) // hook inst
+  jmp inf_reroll_sudan_return
+
+_PlayerExtensions__GetSudanRedrawCount:
+  jmp inf_reroll_sudan_code  // near jump cost size 5
+  nop 1  // pad
+inf_reroll_sudan_return:
+
+registersymbol(_PlayerExtensions__GetSudanRedrawCount,inf_reroll_sudan_alloc,inf_reroll_sudan_backup,inf_reroll_sudan_val)
+ 
+ 
+[DISABLE]
+_PlayerExtensions__GetSudanRedrawCount:
+  readmem(inf_reroll_sudan_backup,6)
+
+dealloc(inf_reroll_sudan_alloc)
+unregistersymbol(_PlayerExtensions__GetSudanRedrawCount,inf_reroll_sudan_alloc,inf_reroll_sudan_backup,inf_reroll_sudan_val)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114079</ID>
+          <Description>"inf_gold_dice"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_PlayerExtensions__GetGoldDiceCount,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunction("","PlayerExtensions","GetGoldDiceCount")
+  )
+end
+{$asm}
+alloc(inf_gold_dice_alloc,1024,_PlayerExtensions__GetGoldDiceCount)
+label(inf_gold_dice_backup)
+label(inf_gold_dice_code)
+label(inf_gold_dice_return)
+label(inf_gold_dice_val)
+
+inf_gold_dice_alloc:
+inf_gold_dice_val:
+inf_gold_dice_code:
+  mov eax, 99
+  ret
+inf_gold_dice_backup:
+  readmem(_PlayerExtensions__GetGoldDiceCount,6) // hook inst
+  jmp inf_gold_dice_return
+
+_PlayerExtensions__GetGoldDiceCount:
+  jmp inf_gold_dice_code  // near jump cost size 5
+  nop 1  // pad
+inf_gold_dice_return:
+
+registersymbol(_PlayerExtensions__GetGoldDiceCount,inf_gold_dice_alloc,inf_gold_dice_backup,inf_gold_dice_val)
+ 
+ 
+[DISABLE]
+_PlayerExtensions__GetGoldDiceCount:
+  readmem(inf_gold_dice_backup,6)
+
+dealloc(inf_gold_dice_alloc)
+unregistersymbol(_PlayerExtensions__GetGoldDiceCount,inf_gold_dice_alloc,inf_gold_dice_backup,inf_gold_dice_val)
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

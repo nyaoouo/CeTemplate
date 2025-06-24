@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(AsmPatch_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    aobScanModule("AsmPatch_at","ProcessName.exe","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+  )
+end
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Mono_Method1,%x)
+define(_Mono_Method2,%x)
+]]
+if syntaxcheck then
+  return defs:format(0,0)
+else
+  return defs:format(
+    findMonoFunction("","Mono","Method1"),
+    findMonoFunction("","Mono","Method2","int,int,int") -- or pass a sign
+  )
+end
+{$asm}
+alloc(mono_patch_alloc,1024,_Mono_Method1)
+label(mono_patch_backup)
+label(mono_patch_code)
+label(mono_patch_return)
+
+mono_patch_alloc:
+mono_patch_code:
+  mov eax, ecx
+mono_patch_backup:
+  readmem(_Mono_Method1,6) // hook inst
+  jmp mono_patch_return
+
+_Mono_Method1:
+  jmp mono_patch_code  // near jump cost size 5
+  nop 1  // pad
+mono_patch_return:
+
+registersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+ 
+ 
+[DISABLE]
+_Mono_Method1:
+  readmem(mono_patch_backup,6)
+
+dealloc(mono_patch_alloc)
+unregistersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+function getParam(ea, offset)
+  local ea_ = offset + ea;
+  return readInteger(ea_, true) + ea_ + 4;
+end
+
+__aobScanModule_counter = 0
+function aobScanModule(name, m, aob)
+  local counter = __aobScanModule_counter
+  __aobScanModule_counter = counter + 1
+
+  local tmp_sym_key = ("_Tmp_Val_%d"):format(counter)
+  AutoAssemble(([[
+    aobscanmodule(%s,%s,%s)
+    registersymbol(%s)
+]]):format(tmp_sym_key, m, aob,tmp_sym_key))
+  local res = getAddress(tmp_sym_key)
+  if res == nil then
+    error(("aob %s not found in %s"):format(name,m))
+  end
+  unregisterSymbol(tmp_sym_key)
+
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in aob:gmatch("%S+") do
+    i = i+1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+
+  if param_offset ~= nil then
+    local ea = res + param_offset
+    local val = 0
+    if param_size == 1 then
+      val = readBytes(ea)
+      if val &gt; 127 then
+        val = val - 256
+      end
+    elseif param_size == 2 then
+      val = readSmallInteger(ea,true)
+    elseif param_size == 4 then
+      val = readInteger(ea,true)
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+    res = ea + param_size + val
+  end
+
+  if name ~=nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+function ensure_monopipe()
+  if monopipe then return monopipe end
+  LaunchMonoDataCollector()
+  if monopipe then return monopipe end
+  error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+end
+
+function findMonoFunction(namespace, cls, method, sign)
+  ensure_monopipe()
+  local methods = mono_class_enumMethods(mono_findClass(namespace,cls))
+  for i = 1,#methods do
+    if methods[i].name == method then
+      if sign == nil or mono_method_getSignature(methods[i].method) == sign then
+        return mono_compile_method(methods[i].method)
+      end
+    end
+  end
+  error(("cannot find method %s:%s:%s with sign "):format(namespace,cls,method,sign))
+end
+
+local function autoAttach(process_name)
+	if process == process_name then
+		return
+	end
+	if getProcessIDFromProcessName(process_name) ~= nil then
+		openProcess(process_name)
+	else
+		error("process "..process_name.." not found")
+	end
+end
+
+
+local function addCompactMenu()
+	if compactmenualreadyexists then return end
+	compactmenualreadyexists = 'yes'
+
+	local parent = getMainForm().Menu.Items
+	local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+	compactmenuitem.Caption = 'Compact View Mode'
+	compactmenuitem.OnClick = function(sender, force)
+		local state = not (compactmenuitem.Caption == 'Compact View Mode')
+		if force ~= nil then state = not force end
+		compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+		getMainForm().Splitter1.Visible = state
+		getMainForm().Panel4.Visible    = state
+		getMainForm().Panel5.Visible    = state
+	end
+end
+
+local function main()
+	addCompactMenu()
+	autoAttach('CatGodRanch.exe')
+end
+
+main()
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"SetMoney"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(_Shepherd_Shop__get_Currency,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    findMonoFunction("Shepherd","Shop","get_Currency")
+  )
+end
+{$asm}
+alloc(set_money_alloc,1024,_Shepherd_Shop__get_Currency)
+label(set_money_backup)
+label(set_money_code)
+label(set_money_return)
+label(set_money_val)
+
+set_money_alloc:
+set_money_val:
+  db 00 00 00 00 F0 69 F8 40
+set_money_code:
+  movsd xmm0, [set_money_val]
+  ret
+set_money_backup:
+  readmem(_Shepherd_Shop__get_Currency,6) // hook inst
+  jmp set_money_return
+
+_Shepherd_Shop__get_Currency:
+  jmp set_money_code  // near jump cost size 5
+  nop 1  // pad
+set_money_return:
+
+registersymbol(_Shepherd_Shop__get_Currency,set_money_alloc,set_money_backup,set_money_val)
+ 
+ 
+[DISABLE]
+_Shepherd_Shop__get_Currency:
+  readmem(set_money_backup,6)
+
+dealloc(set_money_alloc)
+unregistersymbol(_Shepherd_Shop__get_Currency,set_money_alloc,set_money_backup,set_money_val)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114072</ID>
+              <Description>"val"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Double</VariableType>
+              <Address>set_money_val</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

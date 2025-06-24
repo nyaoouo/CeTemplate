@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local _def = syntaxcheck and SCdefMonoFunction or defMonoFunction
+return (
+  _def("_Mono_Method1", "","Mono","Method1") .. "\n" ..
+  _def("_Mono_Method2", "","Mono","Method2","int,int,int")
+)
+{$asm}
+alloc(mono_patch_alloc,1024,_Mono_Method1)
+label(mono_patch_backup)
+label(mono_patch_code)
+label(mono_patch_return)
+
+mono_patch_alloc:
+mono_patch_code:
+  mov eax, ecx
+mono_patch_backup:
+  readmem(_Mono_Method1,6) // hook inst
+  jmp mono_patch_return
+
+_Mono_Method1:
+  jmp mono_patch_code  // near jump cost size 5
+  nop 1  // pad
+mono_patch_return:
+
+registersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+ 
+ 
+[DISABLE]
+_Mono_Method1:
+  readmem(mono_patch_backup,6)
+
+dealloc(mono_patch_alloc)
+unregistersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(AsmPatch_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    aobScanModule("AsmPatch_at","ProcessName.exe","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+  )
+end
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+function ToString(o)
+  if type(o) ~= "table" then return tostring(o) end
+  if o.__tostring then return o:__tostring() end
+  if next(o) == nil then return "{}" end
+  local res = "{"
+  for k, v in pairs(o) do
+    if type(k) == "number" then
+      k = "[" .. k .. "]"
+    else
+      k = '["' .. k .. '"]'
+    end
+    res = res .. k .. "=" .. ToString(v) .. ","
+  end
+  res = res .. "}"
+  return res
+end
+
+function aobScan(pattern, param)
+  local i = -1
+  local param_offset = nil
+  local param_size = 0
+  for segment in pattern:gmatch("%S+") do
+    i = i + 1
+    if segment == '*' then
+      if param_offset == nil then
+        param_offset = i
+      end
+      param_size = param_size + 1
+    elseif param_offset ~= nil then
+      break
+    end
+  end
+  local read_param = nil
+  if param_offset ~= nil then
+    if param_size == 1 then
+      read_param = function (ea, signed)
+        local val = readBytes(ea)
+        if signed and val &gt; 127 then
+          val = val - 256
+        end
+        return val
+      end
+    elseif param_size == 2 then
+      read_param = readSmallInteger
+    elseif param_size == 4 then
+      read_param = readInteger
+    else
+      error(("Unknown param size %d"):format(param_size))
+    end
+  end
+
+  param = param or {}
+  local startScan = 0
+  local endScan = 0x7FFFFFFFFFFFFFFF
+  local protectionflags = param.protectionflags ~= nil or ""
+  local unique = param.unique ~=nil and param.unique or true
+  if param.module ~= nil then
+    local base = getAddress(param.module)
+    local size = getModuleSize(param.module)
+    if moduleBase == nil or moduleSize == nil then
+      error(("%s is not a valid module"):format(param.module))
+    end
+    startScan = base
+    endScan = base + size
+  end
+  if param.startScan ~= nil then
+    startScan = startScan &gt; param.startScan and startScan or param.startScan
+  end
+  if param.endScan ~= nil then
+    endScan = endScan &lt; param.endScan and endScan or param.endScan
+  end
+
+  local memscan = createMemScan()
+  -- print(("%x -&gt; %x protectionflags=%s Pattern=%s"):format(startScan, endScan, tostring(protectionflags), pattern))
+  memscan.firstScan(
+    soExactValue, vtByteArray, rtRounded,
+    pattern, nil, startScan, endScan, protectionflags,
+    fsmNotAligned, "", true, false, false, false)
+  memscan.waitTillDone()
+
+  local foundlist = createFoundList(memscan)
+  foundlist.initialize()
+  -- print(("found: %d"):format(foundlist.Count))
+  local result = nil
+  local addrs = foundlist.Address
+  for i = 0, foundlist.Count - 1 do
+    local res = getAddress(addrs[i])
+    if read_param ~= nil then
+      res = read_param(res + param_offset, true)
+    end
+    if result == nil then
+      result = res
+      if not unique then break end
+    elseif result ~= res then
+        error("Found more than one result")
+    end
+  end
+
+  foundlist.destroy()
+  memscan.destroy()
+
+  if result == nil then
+    error("aob " .. pattern .. " not found")
+  end
+
+  return result
+end
+
+function aobScanModule(name, m, aob)
+  local res = aobScan(aob, {module = m})
+  if name ~= nil then
+    registerSymbol(name, res)
+  end
+  return res
+end
+
+function ensure_monopipe()
+  if monopipe then return monopipe end
+  LaunchMonoDataCollector()
+  if monopipe then return monopipe end
+  error(MessageDialog('Failed to Launch Mono Data Collector', mtError, mbClose))
+end
+
+function findMonoFunction(namespace, cls, method, sign)
+  ensure_monopipe()
+  local methods = mono_class_enumMethods(mono_findClass(namespace, cls))
+  for i = 1, #methods do
+    if methods[i].name == method then
+      if sign == nil or mono_method_getSignature(methods[i].method) == sign then
+        return mono_compile_method(methods[i].method)
+      end
+    end
+  end
+  error(("cannot find method %s:%s:%s with sign "):format(namespace, cls, method, sign))
+end
+
+local function SCdefMonoFunction(vname, ...)
+  return ("define(%s,%x)"):format(vname, 0)
+end
+
+local function defMonoFunction(vname, namespace, cls, method, sign)
+  return ("define(%s,%x)"):format(vname, findMonoFunction(namespace, cls, method, sign))
+end
+
+local function SCdefMonoFunctionAutoName(namespace, cls, method, sign)
+  return SCdefMonoFunction(("_%s__%s__%s"):format(namespace, cls, method), namespace, cls, method, sign)
+end
+local function defMonoFunctionAutoName(namespace, cls, method, sign)
+  return defMonoFunction(("_%s__%s__%s"):format(namespace, cls, method), namespace, cls, method, sign)
+end
+
+function get_defMonoFunction(issyntaxcheck)
+  return issyntaxcheck and SCdefMonoFunction or defMonoFunction
+end
+
+function get_defMonoFunctionAutoName(issyntaxcheck)
+  return issyntaxcheck and SCdefMonoFunctionAutoName or defMonoFunctionAutoName
+end
+
+local function autoAttach(process_name)
+  if process == process_name and getAddress(process_name) ~= 0 then
+    return
+  end
+  local pid = getProcessIDFromProcessName(process_name)
+  if pid == nil then
+    error("process " .. process_name .. " not found")
+  end
+  openProcess(pid)
+end
+
+
+local function addCompactMenu()
+  if compactmenualreadyexists then return end
+  compactmenualreadyexists = 'yes'
+
+  local parent = getMainForm().Menu.Items
+  local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+  compactmenuitem.Caption = 'Compact View Mode'
+  compactmenuitem.OnClick = function(sender, force)
+    local state = not (compactmenuitem.Caption == 'Compact View Mode')
+    if force ~= nil then state = not force end
+    compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+    getMainForm().Splitter1.Visible = state
+    getMainForm().Panel4.Visible    = state
+    getMainForm().Panel5.Visible    = state
+  end
+end
+
+local function main()
+  addCompactMenu()
+  autoAttach('House of Legacy.exe')
+end
+
+if syntaxcheck then return end
+main()
+
+
+
+[DISABLE]
+
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"PatchTalentPt"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+local defs = [[
+define(PatchTalentPt_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  local func_start = findMonoFunction("","InitGameUI","CiTiaoBT")
+  return defs:format(
+    aobScan("4C 8B F0", {startScan=func_start, endScan=func_start+0x2000})
+  )
+end
+{$asm}
+alloc(TalentPtPatch_alloc,$1000,PatchTalentPt_at)
+label(TalentPtPatch_code)
+label(TalentPtPatch_return)
+label(TalentPtPatch_vals)
+label(TalentPtPatch_backup)
+
+TalentPtPatch_alloc:
+TalentPtPatch_vals:
+TalentPtPatch_backup:
+  readmem(PatchTalentPt_at,7)
+TalentPtPatch_code:
+  xor r14, r14
+  jmp TalentPtPatch_return
+
+PatchTalentPt_at:
+  jmp TalentPtPatch_alloc
+  nop 2
+TalentPtPatch_return:
+registersymbol(PatchTalentPt_at,TalentPtPatch_alloc,TalentPtPatch_backup,TalentPtPatch_vals)
+
+[DISABLE]
+
+PatchTalentPt_at:
+  readmem(TalentPtPatch_backup,7)
+
+dealloc(TalentPtPatch_alloc)
+unregistersymbol(PatchTalentPt_at,TalentPtPatch_alloc,TalentPtPatch_backup,TalentPtPatch_vals)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114073</ID>
+          <Description>"SetCoin"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+[ENABLE]
+if syntaxcheck then return end
+(function()
+  local domain = mono_enumDomains()[1]
+  local method = mono_findMethod('', 'FormulaData', 'ChangeCoins')
+  local addr = 0
+  mono_invoke_method_dialog(domain, method, addr)
+end)()
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

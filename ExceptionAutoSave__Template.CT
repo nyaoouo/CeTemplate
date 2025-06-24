@@ -7,9 +7,10 @@
       <VariableType>Auto Assembler Script</VariableType>
       <AssemblerScript>[ENABLE]
 {$lua}
+local _def = syntaxcheck and SCdefMonoFunction or defMonoFunction
 return (
-  nyce.defMonoFunction(syntaxcheck,"_Mono_Method1", "","Mono","Method1") .. "\n" ..
-  nyce.defMonoFunction(syntaxcheck,"_Mono_Method2", "","Mono","Method2","int,int,int")
+  _def("_Mono_Method1", "","Mono","Method1") .. "\n" ..
+  _def("_Mono_Method2", "","Mono","Method2","int,int,int")
 )
 {$asm}
 alloc(mono_patch_alloc,1024,_Mono_Method1)
@@ -46,9 +47,16 @@ unregistersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
       <VariableType>Auto Assembler Script</VariableType>
       <AssemblerScript>[ENABLE]
 {$lua}
-return (
-  nyce.defAobScanModule(syntaxcheck,"AsmPatch_at", "ProcessName","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
-)
+local defs = [[
+define(AsmPatch_at,%x)
+]]
+if syntaxcheck then
+  return defs:format(0)
+else
+  return defs:format(
+    aobScanModule("AsmPatch_at","ProcessName.exe","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+  )
+end
 {$asm}
 alloc(AsmPatch_alloc,$1000)
 label(AsmPatch_code)
@@ -88,7 +96,6 @@ unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
       <VariableType>Auto Assembler Script</VariableType>
       <AssemblerScript>{$lua}
 [ENABLE]
-package.loaded.ny_ce_utils = nil
 nyce = require('ny_ce_utils')
 
 local function main()
@@ -104,10 +111,12 @@ main()
 
 
 
+
 </AssemblerScript>
     </CheatEntry>
   </CheatEntries>
   <UserdefinedSymbols/>
-  <LuaScript>
+  <LuaScript>package.loaded
+
 </LuaScript>
 </CheatTable>

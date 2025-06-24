@@ -84,7 +84,7 @@ unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
     <CheatEntry>
       <ID>0</ID>
       <Description>"Init"</Description>
-      <Options moHideChildren="1"/>
+      <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
       <VariableType>Auto Assembler Script</VariableType>
       <AssemblerScript>{$lua}
 [ENABLE]
@@ -105,9 +105,83 @@ main()
 
 
 </AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"BattleInstance"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defMonoFunction(syntaxcheck,"_Battle__Update", "","Battle","Update")
+)
+{$asm}
+alloc(hook_battle_update_alloc,1024,_Battle__Update)
+label(hook_battle_update_data)
+label(hook_battle_update_backup)
+label(hook_battle_update_code)
+label(hook_battle_update_return)
+
+hook_battle_update_alloc:
+hook_battle_update_data:
+  dq 0
+hook_battle_update_code:
+  mov [hook_battle_update_data], rcx
+hook_battle_update_backup:
+  readmem(_Battle__Update,6) // hook inst
+  jmp hook_battle_update_return
+
+_Battle__Update:
+  jmp hook_battle_update_code  // near jump cost size 5
+  nop 1  // pad
+hook_battle_update_return:
+
+registersymbol(_Battle__Update,hook_battle_update_alloc,hook_battle_update_backup,hook_battle_update_data)
+
+{$lua}
+if not syntaxcheck then (function ()
+  local mr = nyce.createMonoInstanceRecord({
+    fields = {
+        {path="player.Gold", name="Gold"},
+        {path="Riroru_kaisu", name="Reroll"},
+        {path="player"},
+    },
+    parent=mr,
+    class=mono_findClass("", "Battle"),
+  })
+  mr.Description = "BattleData(Generated)"
+  mr.ShowAsHex = true
+  mr.Address = "hook_battle_update_data"
+  mr.Type = vtQword
+  mr.OffsetCount = 1
+  mr.DontSave = true
+  local al = getAddressList()
+  mr:appendToEntry(memrec)
+end)() end
+return ""
+{$asm}
+
+[DISABLE]
+
+{$lua}
+if not syntaxcheck then (function()
+  while memrec.Count &gt; 0 do
+    memrec.Child[0].destroy()
+  end
+end)() end
+return ""
+{$asm}
+
+_Battle__Update:
+  readmem(hook_battle_update_backup,6)
+
+dealloc(hook_battle_update_alloc)
+unregistersymbol(_Battle__Update,hook_battle_update_alloc,hook_battle_update_backup,hook_battle_update_data)
+</AssemblerScript>
+          <CheatEntries/>
+        </CheatEntry>
+      </CheatEntries>
     </CheatEntry>
   </CheatEntries>
   <UserdefinedSymbols/>
-  <LuaScript>
-</LuaScript>
 </CheatTable>
