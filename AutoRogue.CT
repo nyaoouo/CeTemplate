@@ -109,6 +109,7 @@ main()
         <CheatEntry>
           <ID>114071</ID>
           <Description>"BattleInstance"</Description>
+          <ShowAsHex>1</ShowAsHex>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>[ENABLE]
 {$lua}
@@ -144,19 +145,15 @@ if not syntaxcheck then (function ()
     fields = {
         {path="player.Gold", name="Gold"},
         {path="Riroru_kaisu", name="Reroll"},
+        {path="player.MamaKyori", name="Mameter"},
         {path="player"},
     },
-    parent=mr,
+    parent=memrec,
     class=mono_findClass("", "Battle"),
   })
-  mr.Description = "BattleData(Generated)"
-  mr.ShowAsHex = true
-  mr.Address = "hook_battle_update_data"
-  mr.Type = vtQword
-  mr.OffsetCount = 1
-  mr.DontSave = true
-  local al = getAddressList()
-  mr:appendToEntry(memrec)
+  memrec.ShowAsHex = true
+  memrec.Address = "hook_battle_update_data"
+  memrec.OffsetCount = 1
 end)() end
 return ""
 {$asm}
@@ -178,7 +175,6 @@ _Battle__Update:
 dealloc(hook_battle_update_alloc)
 unregistersymbol(_Battle__Update,hook_battle_update_alloc,hook_battle_update_backup,hook_battle_update_data)
 </AssemblerScript>
-          <CheatEntries/>
         </CheatEntry>
       </CheatEntries>
     </CheatEntry>

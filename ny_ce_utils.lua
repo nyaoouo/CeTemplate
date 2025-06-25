@@ -232,6 +232,9 @@ module.createMonoInstanceRecord = function (options)
             for i = 1, #fields do
                 local f = fields[i]
                 if f.name == current then
+                    if f.isStatic then
+                        error(("Field %s is static in class %s"):format(current, mono_class_getName(cls)))
+                    end
                     local vType = monoTypeToVarType(f.monotype)
                     if next == "" then
                         return {f.offset}, vType, f.field
