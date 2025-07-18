@@ -93,7 +93,7 @@ nyce = require('ny_ce_utils')
 
 local function main()
   nyce.addCompactMenu()
-  nyce.autoAttach('Path of Survivors.exe')
+  nyce.autoAttach('ShapeHeroFactory.exe')
 end
 
 if syntaxcheck then return end
@@ -108,108 +108,59 @@ main()
       <CheatEntries>
         <CheatEntry>
           <ID>114071</ID>
-          <Description>"StatRollMax"</Description>
-          <VariableType>Auto Assembler Script</VariableType>
-          <AssemblerScript>[ENABLE]
-{$lua}
-return (
-  nyce.defMonoFunction(syntaxcheck,"_StatGetMinNL_At", "_LimitedInput.Scripts.Managers","JsonStatRuntime","MinValueNonLevel") .. "\n" ..
-  nyce.defMonoFunction(syntaxcheck,"_StatGetMin_At", "_LimitedInput.Scripts.Managers","JsonStatRuntime","MinValue") .. "\n" ..
-  nyce.defMonoFunction(syntaxcheck,"_StatGetMax_At", "_LimitedInput.Scripts.Managers","JsonStatRuntime","MaxValue") .. "\n" ..
-  ""
-)
-{$asm}
-alloc(StatRollMax_alloc,1024,_StatGetMax_At)
-
-StatRollMax_alloc:
-  readmem(_StatGetMin_At,5)
-  readmem(_StatGetMinNL_At,5)
-
-_StatGetMinNL_At:
-  jmp _StatGetMax_At
-_StatGetMin_At:
-  jmp _StatGetMax_At
-
-registersymbol(StatRollMax_alloc,_StatGetMinNL_At,_StatGetMin_At,_StatGetMax_At)
- 
- 
-[DISABLE]
-_StatGetMin_At:
-readmem(StatRollMax_alloc,5)
-_StatGetMinNL_At:
-readmem(StatRollMax_alloc+5,5)
-
-dealloc(StatRollMax_alloc)
-unregistersymbol(StatRollMax_alloc,_StatGetMinNL_At,_StatGetMin_At,_StatGetMax_At)
-</AssemblerScript>
-        </CheatEntry>
-        <CheatEntry>
-          <ID>114072</ID>
-          <Description>"gamestate"</Description>
+          <Description>"game ctx"</Description>
           <ShowAsHex>1</ShowAsHex>
           <VariableType>Auto Assembler Script</VariableType>
-          <AssemblerScript>[ENABLE]
-{$lua}
-return (
-  nyce.defMonoFunction(syntaxcheck,"_GAME_MANAGER__UPDATE", "_LimitedInput.Scripts.Managers","GameManager","Update")
-)
-{$asm}
-alloc(hook_gm_update_alloc,1024,_GAME_MANAGER__UPDATE)
-label(hook_gm_update_data)
-label(hook_gm_update_backup)
-label(hook_gm_update_code)
-label(hook_gm_update_return)
-
-hook_gm_update_alloc:
-hook_gm_update_data:
-  dq 0
-hook_gm_update_code:
-  mov [hook_gm_update_data], rcx
-hook_gm_update_backup:
-  readmem(_GAME_MANAGER__UPDATE,11) // hook inst
-  jmp hook_gm_update_return
-
-_GAME_MANAGER__UPDATE:
-  jmp hook_gm_update_code  // near jump cost size 5
-  nop 6  // pad
-hook_gm_update_return:
-
-registersymbol(_GAME_MANAGER__UPDATE,hook_gm_update_alloc,hook_gm_update_backup,hook_gm_update_data)
-
-{$lua}
+          <AssemblerScript>{$lua}
+[ENABLE]
 if not syntaxcheck then (function ()
   local mr = nyce.createMonoInstanceRecord({
     fields = {
-        {path="gameStateSo"}
+        {path="_outGameData.knowledgePoint"},
+        {path="_inGameData.playBattleData.returnMana"},
+        {path="_inGameData.playBattleData.currentHp"},
+        {path="_inGameData.playBattleData.machineCostPool1"},
+        {path="_inGameData.playBattleData.keen"},
+        {path="_inGameData.playBattleData.researchPointGreen"},
+        {path="_inGameData.playBattleData.researchPointRed"},
+        {path="_inGameData.removeMachineCount"},
+        {path="_inGameData.playBattleData.exp"}
     },
     parent=memrec,
-    class=mono_findClass("_LimitedInput.Scripts.Managers","GameManager"),
+    class=mono_findClass("Game","Context"),
   })
   memrec.ShowAsHex = true
-  memrec.Address = "hook_gm_update_data"
   memrec.OffsetCount = 1
 end)() end
-return ""
-{$asm}
 
 [DISABLE]
-
-{$lua}
 if not syntaxcheck then (function()
   while memrec.Count &gt; 0 do
     memrec.Child[0].destroy()
   end
 end)() end
-return ""
-{$asm}
-
-_GAME_MANAGER__UPDATE:
-  readmem(hook_gm_update_backup,11)
-
-dealloc(hook_gm_update_alloc)
-unregistersymbol(_GAME_MANAGER__UPDATE,hook_gm_update_alloc,hook_gm_update_backup,hook_gm_update_data)
 </AssemblerScript>
           <CheatEntries/>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114079</ID>
+          <Description>"UnlockResearch"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+if syntaxcheck then return end
+local func = (function()
+  nyce.ensure_monopipe()
+  local domain = mono_enumDomains()[1];
+  local method = mono_findMethod('SaveData', 'PlayBattleData', 'UnlockResearch');
+  local addr = nyce.resolveMonoPath(mono_findClass("Game","Context"),"_inGameData.playBattleData");
+  mono_invoke_method_dialog(domain, method, readPointer(addr));
+end)
+[ENABLE]
+func()
+[DISABLE]
+func()
+
+</AssemblerScript>
         </CheatEntry>
       </CheatEntries>
     </CheatEntry>

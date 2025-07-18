@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defMonoFunction(syntaxcheck,"_Mono_Method1", "","Mono","Method1") .. "\n" ..
+  nyce.defMonoFunction(syntaxcheck,"_Mono_Method2", "","Mono","Method2","int,int,int")
+)
+{$asm}
+alloc(mono_patch_alloc,1024,_Mono_Method1)
+label(mono_patch_backup)
+label(mono_patch_code)
+label(mono_patch_return)
+
+mono_patch_alloc:
+mono_patch_code:
+  mov eax, ecx
+mono_patch_backup:
+  readmem(_Mono_Method1,6) // hook inst
+  jmp mono_patch_return
+
+_Mono_Method1:
+  jmp mono_patch_code  // near jump cost size 5
+  nop 1  // pad
+mono_patch_return:
+
+registersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+ 
+ 
+[DISABLE]
+_Mono_Method1:
+  readmem(mono_patch_backup,6)
+
+dealloc(mono_patch_alloc)
+unregistersymbol(_Mono_Method1,mono_patch_alloc,mono_patch_backup)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defAobScanModule(syntaxcheck,"AsmPatch_at", "ProcessName","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+)
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+package.loaded.ny_ce_utils = nil
+nyce = require('ny_ce_utils')
+
+local function main()
+  nyce.addCompactMenu()
+  nyce.autoAttach('Demonic Mahjong.exe')
+end
+
+if syntaxcheck then return end
+main()
+
+
+[DISABLE]
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"prem inf token"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  -- MaJiang.AccountGameDataHandle.GetToken
+  nyce.defMonoFunction(syntaxcheck,"_GetToken_At", "MaJiang","AccountGameDataHandle","GetToken") .. "\n" ..
+  nyce.defMonoFunction(syntaxcheck,"_UpdateToken_At", "MaJiang","AccountGameDataHandle","UpdateToken")
+)
+{$asm}
+alloc(inf_token_alloc,1024,_GetToken_At)
+label(is_override_test)
+label(is_override_test_flags)
+label(_is_override_test__vals)
+label(_is_override_test_search_loop)
+label(_is_override_test_found_match)
+label(_is_override_test_cleanup)
+label(hook_on_get)
+label(hook_on_set)
+label(_hook_on_get_orig)
+label(_hook_on_set_orig)
+label(hook_on_get_ret)
+label(hook_on_set_ret)
+
+inf_token_alloc:
+is_override_test_flags:
+  db 00 00 00 00 00 00 00 00
+_is_override_test__vals:
+  dd (int)1
+  dd (int)2
+  dd (int)3
+  dd (int)4
+  dd (int)10
+  dd (int)100
+  dd (int)9999
+is_override_test:
+  // return is_override_test_flags[_is_override_test__vals.indexOf(edx)]
+  push rbx
+  xor rax, rax
+  mov rbx, _is_override_test__vals
+_is_override_test_search_loop:
+  cmp edx, [rbx+rax*4]
+  je _is_override_test_found_match
+  inc rax
+  cmp rax, 7
+  jl _is_override_test_search_loop
+  xor al, al
+  jmp _is_override_test_cleanup
+
+_is_override_test_found_match:
+  mov rbx, is_override_test_flags
+  mov al, [rbx+rax]
+
+_is_override_test_cleanup:
+  pop rbx
+  ret
+
+
+hook_on_get:
+  call is_override_test
+  test al, al
+  jz _hook_on_get_orig
+  mov eax, (int)99999
+  ret
+_hook_on_get_orig:
+  readmem(_GetToken_At,6) // hook inst
+  jmp hook_on_get_ret
+
+
+hook_on_set:
+  call is_override_test
+  test al, al
+  jz _hook_on_set_orig
+  ret
+_hook_on_set_orig:
+  readmem(_UpdateToken_At,6) // hook inst
+  jmp hook_on_set_ret
+
+_GetToken_At:
+  jmp hook_on_get  // near jump cost size 5
+  nop 1  // pad
+hook_on_get_ret:
+
+_UpdateToken_At:
+  jmp hook_on_set  // near jump cost size 5
+  nop 1  // pad
+hook_on_set_ret:
+
+
+registersymbol(inf_token_alloc,_GetToken_At,_UpdateToken_At,_hook_on_get_orig,_hook_on_set_orig,is_override_test_flags)
+
+
+[DISABLE]
+_GetToken_At:
+  readmem(_hook_on_get_orig,6)
+_UpdateToken_At:
+  readmem(_hook_on_set_orig,6)
+
+dealloc(inf_token_alloc)
+unregistersymbol(inf_token_alloc,_GetToken_At,_UpdateToken_At,_hook_on_get_orig,_hook_on_set_orig,is_override_test_flags)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114072</ID>
+              <Description>"Recharge"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>is_override_test_flags</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114073</ID>
+              <Description>"CashToken"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>7FFB73340001</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114074</ID>
+              <Description>"LowToken"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>7FFB73340002</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114075</ID>
+              <Description>"PremiumToken"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>7FFB73340003</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114076</ID>
+          <Description>"gamedata"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+[ENABLE]
+if not syntaxcheck then (function ()
+  memrec.ShowAsHex = true
+  memrec.Address = nyce.resolveMonoPath(mono_findClass("MaJiang","AccountGameDataHandle"), "_instance")
+  memrec.OffsetCount = 1
+  local mr = nyce.createMonoInstanceRecord({
+    fields={
+        {path="gameData.currency", name="currency"}
+    },
+    parent=memrec,
+    class=mono_findClass("MaJiang","AccountGameDataHandle"),
+  })
+end)() end
+
+[DISABLE]
+if not syntaxcheck then (function()
+  while memrec.Count &gt; 0 do
+    memrec.Child[0].destroy()
+  end
+end)() end
+
+</AssemblerScript>
+          <CheatEntries/>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

@@ -180,6 +180,50 @@ module.addCompactMenu = function()
   end
 end
 
+module.resolveMonoPath = function (cls, path, instance)
+    module.ensure_monopipe()
+    local current, _, next = path:match("([^%.]+)(%.?)(.*)")
+    local fields = mono_class_enumFields(cls, 1)
+    for i = 1, #fields do
+        local f = fields[i]
+        if f.name == current then
+            -- print(module.tostring(f))
+            local address;
+            if f.isStatic then
+                address = f.staticAddress
+            else
+                if instance == nil then
+                    error(("Field %s is not static, but no instance provided"):format(current))
+                end
+                address = instance + f.offset
+            end
+            if next == "" then
+                return address, f.monotype, f.field
+            end
+            local vType = monoTypeToVarType(f.monotype)
+            if next == "" then
+                return {address}, vType, f.field
+            end
+            if vType ~= vtPointer then
+                error(("Field %s is not a pointer in class %s"):format(current, mono_class_getName(cls)))
+            end
+            local next_cls = mono_field_getClass(f.field);
+            -- print(("Resolving next path %s in class %s with address %x"):format(next, mono_class_getName(next_cls), address))
+            return module.resolveMonoPath(next_cls, next, readPointer(address))
+        end
+    end
+end
+
+local fmtMrAddress = function(memoryRecord)
+    local address = memoryRecord.Address
+    if memoryRecord.OffsetCount then
+        for i = 0, memoryRecord.OffsetCount - 1 do
+            address = ("%s+%x"):format(address, memoryRecord.Offset[i])
+        end
+    end
+    return address
+end
+
 module.createMonoInstanceRecord = function (options)
     -- local al = getAddressList()
     -- local mr = module.createMonoInstanceRecord({
@@ -208,7 +252,7 @@ module.createMonoInstanceRecord = function (options)
     if cls == nil then
         error("Required option 'class' is not provided")
     end
-    
+    -- print(("Creating Mono Instance %s for class %s"):format(fmtMrAddress(parent), mono_class_getName(cls)))
     if options.fields == nil then
         local _fields = mono_class_enumFields(cls,1)
         for i = 1, #_fields do
@@ -216,7 +260,7 @@ module.createMonoInstanceRecord = function (options)
             if not f.isStatic then
                 local field = {
                     name = f.name,
-                    offsets = {f.offset},
+                    offsets = {("+%x"):format(f.offset)},
                     type = monoTypeToVarType(f.monotype),
                 }
                 if field.type == vtPointer then
@@ -232,18 +276,28 @@ module.createMonoInstanceRecord = function (options)
             for i = 1, #fields do
                 local f = fields[i]
                 if f.name == current then
+                    -- print(module.tostring(f))
+                    local address;
                     if f.isStatic then
-                        error(("Field %s is static in class %s"):format(current, mono_class_getName(cls)))
+                        address = ("%x"):format(f.staticAddress)
+                    else
+                        address = ("+%x"):format(f.offset)
                     end
                     local vType = monoTypeToVarType(f.monotype)
                     if next == "" then
-                        return {f.offset}, vType, f.field
+                        return {address}, vType, f.field
                     end
                     if vType ~= vtPointer then
                         error(("Field %s is not a pointer in class %s"):format(current, mono_class_getName(cls)))
                     end
                     local offsets, ftype, member = resolveOffset(mono_field_getClass(f.field), next)
-                    return {f.offset, table.unpack(offsets)}, ftype, member
+                    local new_offsets;
+                    if offsets[1]:sub(1, 1) == '+' then
+                        new_offsets = {address, table.unpack(offsets)}
+                    else
+                        new_offsets = offsets
+                    end
+                    return new_offsets, ftype, member
                 end
             end
             error(("Field %s not found in class %s"):format(current, mono_class_getName(cls)))
@@ -266,16 +320,16 @@ module.createMonoInstanceRecord = function (options)
             fields[#fields + 1] = field
         end
     end
-
     for i = 1, #fields do
         local field = fields[i]
+        -- print(("Creating field %s"):format(module.tostring(field)))
         local mr = al.createMemoryRecord()
         mr.DontSave = true
         mr.Description = field.name
         if options.onCreateField then
             options.onCreateField(mr, field)
         end
-        mr.address = ("+%x"):format(field.offsets[1])
+        mr.address = field.offsets[1]
         -- mr.OffsetCount = #field.offsets
         -- for j = 1, #field.offsets do
         --     mr.Offset[j - 1] = field.offsets[j]
@@ -283,12 +337,21 @@ module.createMonoInstanceRecord = function (options)
         if #field.offsets > 1 then
             mr.OffsetCount = #field.offsets - 1
             for j = 2, #field.offsets do
-                mr.Offset[j - 2] = field.offsets[j]
+                local offset = field.offsets[j]
+                if offset:sub(1, 1) == '+' then
+                    mr.Offset[mr.OffsetCount - j + 1] = tonumber(offset:sub(2), 16)
+                else
+                    error(("Invalid offset %s for field %s"):format(offset, field.name))
+                end
             end
         end
         if field.type == vtPointer then
             mr.Type = vtAutoAssembler
             mr.OffsetCount = mr.OffsetCount + 1
+            for j = mr.OffsetCount - 1, 1, -1 do
+                mr.Offset[j] = mr.Offset[j - 1]
+            end
+            mr.Offset[0] = 0
             mr.Script = ([[{$lua}
 [ENABLE]
 if not syntaxcheck then require("ny_ce_utils").createMonoInstanceRecord({
