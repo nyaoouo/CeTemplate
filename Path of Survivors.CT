@@ -211,6 +211,45 @@ unregistersymbol(_GAME_MANAGER__UPDATE,hook_gm_update_alloc,hook_gm_update_backu
 </AssemblerScript>
           <CheatEntries/>
         </CheatEntry>
+        <CheatEntry>
+          <ID>114074</ID>
+          <Description>"InfLvPts"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defMonoFunction(syntaxcheck,"get_CurrentSelectedClassLevelPoints__at", "_LimitedInput.Scripts.PassiveTree","CharacterPassiveTree","get_CurrentSelectedClassLevelPoints")
+)
+{$asm}
+alloc(InfLvPts_alloc,1024,get_CurrentSelectedClassLevelPoints__at)
+label(InfLvPts_backup)
+label(InfLvPts_code)
+label(InfLvPts_return)
+
+InfLvPts_alloc:
+InfLvPts_code:
+  mov rax, (int)9999
+  ret
+InfLvPts_backup:
+  readmem(get_CurrentSelectedClassLevelPoints__at,8) // hook inst
+  jmp InfLvPts_return
+
+get_CurrentSelectedClassLevelPoints__at:
+  jmp InfLvPts_code  // near jump cost size 5
+  nop 3  // pad
+InfLvPts_return:
+
+registersymbol(get_CurrentSelectedClassLevelPoints__at,InfLvPts_alloc,InfLvPts_backup)
+ 
+ 
+[DISABLE]
+get_CurrentSelectedClassLevelPoints__at:
+  readmem(InfLvPts_backup,8)
+
+dealloc(InfLvPts_alloc)
+unregistersymbol(get_CurrentSelectedClassLevelPoints__at,InfLvPts_alloc,InfLvPts_backup)
+</AssemblerScript>
+        </CheatEntry>
       </CheatEntries>
     </CheatEntry>
   </CheatEntries>

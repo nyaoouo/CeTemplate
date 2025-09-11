@@ -152,35 +152,35 @@ module.defMonoFunction = function(issyntaxcheck, vname, namespace, cls, method, 
     end
 end
 
-module.autoAttach = function (process_name)
-  if process == process_name and getAddress(process_name) ~= 0 then
-    return
-  end
-  local pid = getProcessIDFromProcessName(process_name)
-  if pid == nil then
-    error("process " .. process_name .. " not found")
-  end
-  openProcess(pid)
+module.autoAttach = function(process_name)
+    if process == process_name and getAddress(process_name) ~= 0 then
+        return
+    end
+    local pid = getProcessIDFromProcessName(process_name)
+    if pid == nil then
+        error("process " .. process_name .. " not found")
+    end
+    openProcess(pid)
 end
 
 module.addCompactMenu = function()
-  if compactmenualreadyexists then return end
-  compactmenualreadyexists = 'yes'
+    if compactmenualreadyexists then return end
+    compactmenualreadyexists = 'yes'
 
-  local parent = getMainForm().Menu.Items
-  local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
-  compactmenuitem.Caption = 'Compact View Mode'
-  compactmenuitem.OnClick = function(sender, force)
-    local state = not (compactmenuitem.Caption == 'Compact View Mode')
-    if force ~= nil then state = not force end
-    compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
-    getMainForm().Splitter1.Visible = state
-    getMainForm().Panel4.Visible    = state
-    getMainForm().Panel5.Visible    = state
-  end
+    local parent = getMainForm().Menu.Items
+    local compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem)
+    compactmenuitem.Caption = 'Compact View Mode'
+    compactmenuitem.OnClick = function(sender, force)
+        local state = not (compactmenuitem.Caption == 'Compact View Mode')
+        if force ~= nil then state = not force end
+        compactmenuitem.Caption         = state and 'Compact View Mode' or 'Full View Mode'
+        getMainForm().Splitter1.Visible = state
+        getMainForm().Panel4.Visible    = state
+        getMainForm().Panel5.Visible    = state
+    end
 end
 
-module.resolveMonoPath = function (cls, path, instance)
+module.resolveMonoPath = function(cls, path, instance)
     module.ensure_monopipe()
     local current, _, next = path:match("([^%.]+)(%.?)(.*)")
     local fields = mono_class_enumFields(cls, 1)
@@ -202,7 +202,7 @@ module.resolveMonoPath = function (cls, path, instance)
             end
             local vType = monoTypeToVarType(f.monotype)
             if next == "" then
-                return {address}, vType, f.field
+                return { address }, vType, f.field
             end
             if vType ~= vtPointer then
                 error(("Field %s is not a pointer in class %s"):format(current, mono_class_getName(cls)))
@@ -224,7 +224,7 @@ local fmtMrAddress = function(memoryRecord)
     return address
 end
 
-module.createMonoInstanceRecord = function (options)
+module.createMonoInstanceRecord = function(options)
     -- local al = getAddressList()
     -- local mr = module.createMonoInstanceRecord({
     --   fields = {
@@ -254,13 +254,13 @@ module.createMonoInstanceRecord = function (options)
     end
     -- print(("Creating Mono Instance %s for class %s"):format(fmtMrAddress(parent), mono_class_getName(cls)))
     if options.fields == nil then
-        local _fields = mono_class_enumFields(cls,1)
+        local _fields = mono_class_enumFields(cls, 1)
         for i = 1, #_fields do
             local f = _fields[i]
             if not f.isStatic then
                 local field = {
                     name = f.name,
-                    offsets = {("+%x"):format(f.offset)},
+                    offsets = { ("+%x"):format(f.offset) },
                     type = monoTypeToVarType(f.monotype),
                 }
                 if field.type == vtPointer then
@@ -285,7 +285,7 @@ module.createMonoInstanceRecord = function (options)
                     end
                     local vType = monoTypeToVarType(f.monotype)
                     if next == "" then
-                        return {address}, vType, f.field
+                        return { address }, vType, f.field
                     end
                     if vType ~= vtPointer then
                         error(("Field %s is not a pointer in class %s"):format(current, mono_class_getName(cls)))
@@ -293,7 +293,7 @@ module.createMonoInstanceRecord = function (options)
                     local offsets, ftype, member = resolveOffset(mono_field_getClass(f.field), next)
                     local new_offsets;
                     if offsets[1]:sub(1, 1) == '+' then
-                        new_offsets = {address, table.unpack(offsets)}
+                        new_offsets = { address, table.unpack(offsets) }
                     else
                         new_offsets = offsets
                     end
@@ -369,11 +369,119 @@ end)() end
         else
             mr.Type = field.type
         end
-        
+
         mr:appendToEntry(parent)
     end
 
     return parent
+end
+
+local function formatWithKeys(formatString, data)
+  return formatString:gsub('(%${([%w_]+)})', function(match, key)
+    return data[key] or match
+  end)
+end
+
+local unique_id = 0
+local function get_unique_prefix()
+    unique_id = unique_id + 1
+    return ("_unique_%d"):format(unique_id)
+end
+
+module.createSimpleHook = function(params)
+    -- params = {
+    --   method: number
+    --   code: string (user_code)
+    --   vars?: string
+    -- }
+    local method_at = params.method
+    local allocate_at = allocateMemory(1024, method_at)
+    local jmp_size = 5
+    if math.abs(allocate_at - method_at) >= 0x7FFFFFFF then
+        jmp_size = 14 -- use absolute jmp
+    end
+    local bytes_to_take = 0
+    local d = createDisassembler()
+    while bytes_to_take < jmp_size do
+        d.disassemble(method_at + bytes_to_take)
+        bytes_to_take = bytes_to_take + #d.LastDisassembleData.bytes
+    end
+    d.destroy()
+    local prefix = get_unique_prefix()
+
+    local code = formatWithKeys([[
+define(_MethodAt_,${method_at})
+define(_Alloc_,${allocate_at})
+label(${prefix}_Backup_)
+label(${prefix}_Var_)
+label(_Code_)
+label(_RETURN_)
+_Alloc_:
+_Code_:
+${user_code}
+${prefix}_Backup_:
+readmem(_MethodAt_,${bytes_to_take})
+jmp _RETURN_
+${prefix}_Var_:
+_MethodAt_:
+jmp _Code_
+nop ${nop_count}
+_RETURN_:
+registerSymbol(${prefix}_Backup_,${prefix}_Var_)
+]], {
+        method_at = ("%x"):format(method_at),
+        allocate_at = ("%x"):format(allocate_at),
+        user_code = formatWithKeys(params.code, {
+            _ORIG_ = prefix .. "_Backup_",
+            _Var_ = prefix .. "_Var_",
+        }),
+        bytes_to_take = ("%d"):format(bytes_to_take),
+        nop_count = ("%d"):format(bytes_to_take - jmp_size),
+        prefix = prefix,
+    })
+    if not autoAssemble(code) then
+        print("Auto assemble failed:\n" .. code)
+        error("Auto assemble failed")
+    end
+
+    if params.vars ~= nil then
+        local var_at = getAddressSafe(prefix .. "_Var_")
+        if var_at == nil then
+            error("Cannot find var address")
+        end
+        registerSymbol(params.vars, var_at, true)
+    end
+
+    -- info to restore
+    return {
+        method_at = method_at,
+        allocate_at = allocate_at,
+        bytes_to_take = bytes_to_take,
+        prefix = prefix,
+        vars = params.vars,
+    }
+end
+
+module.removeSimpleHook = function(hook_info)
+    local code = [[
+define(_MethodAt_,${method_at})
+_MethodAt_:
+readmem(${prefix}_Backup_,${bytes_to_take})
+unregisterSymbol(${prefix}_Backup_,${prefix}_Var_)
+]]
+    code = formatWithKeys(code, {
+        method_at = ("%x"):format(hook_info.method_at),
+        bytes_to_take = ("%d"):format(hook_info.bytes_to_take),
+        prefix = hook_info.prefix,
+    })
+    if not autoAssemble(code) then
+        print("Auto assemble failed:\n" .. code)
+        error("Auto assemble failed")
+    end
+    if hook_info.vars ~= nil then
+        unregisterSymbol(hook_info.vars)
+    end
+    deAlloc(hook_info.allocate_at)
 end
 
 return module

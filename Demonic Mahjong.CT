@@ -269,7 +269,45 @@ if not syntaxcheck then (function()
 end)() end
 
 </AssemblerScript>
-          <CheatEntries/>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114077</ID>
+          <Description>"inf ban"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defMonoFunction(syntaxcheck,"_BanLingYongCtr_IsCanSeal_at", "MaJiang.PlayMaJiang.UI.Illustration","BanLingYongCtr","IsCanSeal") .. "\n"
+)
+{$asm}
+alloc(inf_ban_alloc,1024,_BanLingYongCtr_IsCanSeal_at)
+label(inf_ban_backup)
+label(inf_ban_code)
+label(inf_ban_return)
+
+inf_ban_alloc:
+inf_ban_code:
+  mov al, 1
+  ret
+inf_ban_backup:
+  readmem(_BanLingYongCtr_IsCanSeal_at,6) // hook inst
+  jmp inf_ban_return
+
+_BanLingYongCtr_IsCanSeal_at:
+  jmp inf_ban_code  // near jump cost size 5
+  nop 1  // pad
+inf_ban_return:
+
+registersymbol(_BanLingYongCtr_IsCanSeal_at,inf_ban_alloc,inf_ban_backup)
+ 
+ 
+[DISABLE]
+_BanLingYongCtr_IsCanSeal_at:
+  readmem(inf_ban_backup,6)
+
+dealloc(inf_ban_alloc)
+unregistersymbol(_BanLingYongCtr_IsCanSeal_at,inf_ban_alloc,inf_ban_backup)
+</AssemblerScript>
         </CheatEntry>
       </CheatEntries>
     </CheatEntry>
