@@ -174,7 +174,7 @@ return (
   syntaxcheck,
   "randResearchRewardSize_at",
   "GameAssembly.dll",
-  "41 ? ? 8b ? e8 ? ? ? ? 49 ? ? ? 49 89 46 ?")
+  "41 ? ? 8b ? e8 ? ? ? ? 48 ? ? ? 48 89 45 ?") -- UI_ResearchRewardWindow__CreateReward
 )
 {$asm}
 alloc(MoreRolls_alloc,$1000,randResearchRewardSize_at)

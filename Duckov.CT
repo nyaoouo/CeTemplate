@@ -2,7 +2,7 @@
 <CheatTable CheatEngineTableVersion="46">
   <CheatEntries>
     <CheatEntry>
-      <ID>2</ID>
+      <ID>114072</ID>
       <Description>"mono patch"</Description>
       <VariableType>Auto Assembler Script</VariableType>
       <AssemblerScript>[ENABLE]
@@ -77,7 +77,7 @@ nyce = require('ny_ce_utils')
 
 local function main()
   nyce.addCompactMenu()
-  nyce.autoAttach('AutoRogue.exe')
+  nyce.autoAttach('Duckov.exe')
 end
 
 if syntaxcheck then return end
@@ -89,6 +89,60 @@ main()
 
 
 </AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"FreeShop"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+FreeCostHI = {
+  is_enough = nyce.createSimpleHook({
+    method = nyce.findMonoFunction("Duckov.Economy","EconomyManager","IsEnough"),
+    code= "mov al, 1\nret"
+  }),
+  pay = nyce.createSimpleHook({
+    method = nyce.findMonoFunction("Duckov.Economy","EconomyManager","Pay","Duckov.Economy.Cost,bool,bool"),
+    code= "mov al, 1\nret"
+  }),
+  consume_items = nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","ItemUtilities","ConsumeItems","Duckov.Economy.Cost"),
+    code= "mov al, 1\nret"
+  }),
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(FreeCostHI.is_enough)
+nyce.removeSimpleHook(FreeCostHI.pay)
+nyce.removeSimpleHook(FreeCostHI.consume_items)
+FreeCostHI = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"FastUnlock"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+FastUnlockHook = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("Duckov.PerkTrees","Perk","SubmitItemsAndBeginUnlocking"),
+  code= ("jmp 0x%x"):format(nyce.findMonoFunction("Duckov.PerkTrees","Perk","ForceUnlock"))
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(FastUnlockHook)
+FastUnlockHook = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
     </CheatEntry>
   </CheatEntries>
   <UserdefinedSymbols/>

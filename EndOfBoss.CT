@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defAobScanModule(syntaxcheck,"AsmPatch_at", "ProcessName","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+)
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+MonoMethod_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","Mono","Method1"),
+  code= [[
+xor eax, eax
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(MonoMethod_hookInfo)
+MonoMethod_hookInfo = nil
+{$asm}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+package.loaded.ny_ce_utils = nil
+nyce = require('ny_ce_utils')
+
+local function main()
+  nyce.addCompactMenu()
+  nyce.autoAttach('EndOfBoss.exe')
+end
+
+if syntaxcheck then return end
+main()
+
+
+[DISABLE]
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"inf refresh"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+InfRefresh_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","BattleManager","GetRefreshTimes"),
+  code= [[
+xor edx, edx
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(InfRefresh_hookInfo)
+InfRefresh_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114072</ID>
+          <Description>"inf delete"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+InfDelete_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","BattleManager","GetDeleteTimes"),
+  code= [[
+mov al, 1
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(InfDelete_hookInfo)
+InfDelete_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

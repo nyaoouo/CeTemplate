@@ -393,6 +393,7 @@ module.createSimpleHook = function(params)
     --   method: number
     --   code: string (user_code)
     --   vars?: string
+    --   aa?: string (auto assemble code)
     -- }
     local method_at = params.method
     local allocate_at = allocateMemory(1024, method_at)
@@ -416,6 +417,7 @@ label(${prefix}_Backup_)
 label(${prefix}_Var_)
 label(_Code_)
 label(_RETURN_)
+${user_autoassemble}
 _Alloc_:
 _Code_:
 ${user_code}
@@ -438,6 +440,7 @@ registerSymbol(${prefix}_Backup_,${prefix}_Var_)
         bytes_to_take = ("%d"):format(bytes_to_take),
         nop_count = ("%d"):format(bytes_to_take - jmp_size),
         prefix = prefix,
+        user_autoassemble = params.aa or "",
     })
     if not autoAssemble(code) then
         print("Auto assemble failed:\n" .. code)

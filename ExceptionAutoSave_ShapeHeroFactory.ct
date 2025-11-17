@@ -93,7 +93,7 @@ nyce = require('ny_ce_utils')
 
 local function main()
   nyce.addCompactMenu()
-  nyce.autoAttach('Shape of Dreams.exe')
+  nyce.autoAttach('ShapeHeroFactory.exe')
 end
 
 if syntaxcheck then return end
@@ -108,122 +108,7 @@ main()
       <CheatEntries>
         <CheatEntry>
           <ID>114071</ID>
-          <Description>"NoStarDustCost"</Description>
-          <VariableType>Auto Assembler Script</VariableType>
-          <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-NoStarDustCost_hookInfo = nyce.createSimpleHook({
-  method = nyce.findMonoFunction("","UI_Constellations_StarItem","get_requiredStardust"),
-  code= [[
-xor eax, eax
-ret
-]]
-})
-{$asm}
-[DISABLE]
-{$lua}
-if syntaxcheck then return end
-nyce.removeSimpleHook(NoStarDustCost_hookInfo)
-NoStarDustCost_hookInfo = nil
-{$asm}
-</AssemblerScript>
-        </CheatEntry>
-        <CheatEntry>
-          <ID>114073</ID>
-          <Description>"CanRefresh"</Description>
-          <VariableType>Auto Assembler Script</VariableType>
-          <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-NoStarDustCost_hookInfo = nyce.createSimpleHook({
-  method = nyce.findMonoFunction("","PropEnt_Merchant_Base","CanRefresh"),
-  code= [[
-mov eax, 1
-ret
-]]
-})
-{$asm}
-[DISABLE]
-{$lua}
-if syntaxcheck then return end
-nyce.removeSimpleHook(NoStarDustCost_hookInfo)
-NoStarDustCost_hookInfo = nil
-{$asm}
-</AssemblerScript>
-        </CheatEntry>
-        <CheatEntry>
-          <ID>114072</ID>
-          <Description>"NoCost"</Description>
-          <VariableType>Auto Assembler Script</VariableType>
-          <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-NoCost_hookInfo = nyce.createSimpleHook({
-  method = nyce.findMonoFunction("","Cost","CanAfford","Entity,int"),
-  code= [[
-mov dword ptr [rcx], 0
-mov dword ptr [rcx+4], 0
-mov dword ptr [rcx+8], 0
-mov dword ptr [rcx+C], 0
-mov dword ptr [rcx+10], 0
-xor eax, eax
-ret
-]]
-})
-{$asm}
-[DISABLE]
-{$lua}
-if syntaxcheck then return end
-nyce.removeSimpleHook(NoCost_hookInfo)
-NoCost_hookInfo = nil
-{$asm}
-</AssemblerScript>
-        </CheatEntry>
-        <CheatEntry>
-          <ID>114074</ID>
-          <Description>"FixLootRarity"</Description>
-          <Options moHideChildren="1"/>
-          <VariableType>Auto Assembler Script</VariableType>
-          <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-NoStarDustCost_hookInfo = nyce.createSimpleHook({
-  method = nyce.findMonoFunction("","Loot","SelectRarity"),
-  code= [[
-mov eax, [${_Var_}]
-ret
-]],
-  vars="LootRarity",
-})
-{$asm}
-[DISABLE]
-{$lua}
-if syntaxcheck then return end
-nyce.removeSimpleHook(NoStarDustCost_hookInfo)
-NoStarDustCost_hookInfo = nil
-{$asm}
-</AssemblerScript>
-          <CheatEntries>
-            <CheatEntry>
-              <ID>114075</ID>
-              <Description>"Value"</Description>
-              <DropDownList DisplayValueAsItem="1">0:Common
-1:Rare
-2:Epic
-3:Legendary
-4:Character
-5:Identity
-</DropDownList>
-              <ShowAsSigned>0</ShowAsSigned>
-              <VariableType>4 Bytes</VariableType>
-              <Address>LootRarity</Address>
-            </CheatEntry>
-          </CheatEntries>
-        </CheatEntry>
-        <CheatEntry>
-          <ID>114076</ID>
-          <Description>"profile"</Description>
+          <Description>"game ctx"</Description>
           <ShowAsHex>1</ShowAsHex>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>{$lua}
@@ -231,11 +116,18 @@ NoStarDustCost_hookInfo = nil
 if not syntaxcheck then (function ()
   local mr = nyce.createMonoInstanceRecord({
     fields = {
-        {path="profileMain"},
-        {path="profileStats"},
+        {path="_outGameData.knowledgePoint"},
+        {path="_inGameData.playBattleData.returnMana"},
+        {path="_inGameData.playBattleData.currentHp"},
+        {path="_inGameData.playBattleData.machineCostPool1"},
+        {path="_inGameData.playBattleData.keen"},
+        {path="_inGameData.playBattleData.researchPointGreen"},
+        {path="_inGameData.playBattleData.researchPointRed"},
+        {path="_inGameData.removeMachineCount"},
+        {path="_inGameData.playBattleData.exp"}
     },
     parent=memrec,
-    class=mono_findClass("","DewSave"),
+    class=mono_findClass("Game","Context"),
   })
   memrec.ShowAsHex = true
   memrec.OffsetCount = 1
@@ -247,7 +139,97 @@ if not syntaxcheck then (function()
     memrec.Child[0].destroy()
   end
 end)() end
+</AssemblerScript>
+          <CheatEntries/>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114079</ID>
+          <Description>"UnlockResearch"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+if syntaxcheck then return end
+local func = (function()
+  nyce.ensure_monopipe()
+  local domain = mono_enumDomains()[1];
+  local method = mono_findMethod('SaveData', 'PlayBattleData', 'UnlockResearch');
+  local addr = nyce.resolveMonoPath(mono_findClass("Game","Context"),"_inGameData.playBattleData");
+  mono_invoke_method(domain, method, readPointer(addr));
+end)
+[ENABLE]
+func()
+[DISABLE]
+func()
 
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114089</ID>
+          <Description>"more rolls"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defAobScanModule(
+  syntaxcheck,
+  "randResearchRewardSize_at",
+  "GameAssembly.dll",
+  "41 ? ? 8b ? e8 ? ? ? ? 48 ? ? ? 48 89 45 ?") -- UI_ResearchRewardWindow__CreateReward
+)
+{$asm}
+alloc(MoreRolls_alloc,$1000,randResearchRewardSize_at)
+label(MoreRolls_code)
+label(MoreRolls_return)
+label(MoreRolls_vals)
+label(MoreRolls_backup)
+
+MoreRolls_alloc:
+MoreRolls_vals:
+  dq (int)99
+MoreRolls_code:
+MoreRolls_backup:
+  readmem(randResearchRewardSize_at,5)
+  mov edx, [MoreRolls_vals]
+  jmp MoreRolls_return
+
+randResearchRewardSize_at:
+  jmp MoreRolls_code
+MoreRolls_return:
+registersymbol(randResearchRewardSize_at,MoreRolls_alloc,MoreRolls_backup,MoreRolls_vals)
+
+[DISABLE]
+
+randResearchRewardSize_at:
+  readmem(MoreRolls_backup,5)
+
+dealloc(MoreRolls_alloc)
+unregistersymbol(randResearchRewardSize_at,MoreRolls_alloc,MoreRolls_backup,MoreRolls_vals)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114099</ID>
+          <Description>"ChangeUnlockResearch"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+NoStarDustCost_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction('SaveData', 'PlayBattleData', 'UnlockResearch'),
+  code= [[
+push ebx
+mov ebx, [${_Var_}]
+test ebx, ebx
+pop ebx
+]],
+  vars="UnlockResearchOverride",
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(NoStarDustCost_hookInfo)
+NoStarDustCost_hookInfo = nil
+{$asm}
 </AssemblerScript>
         </CheatEntry>
       </CheatEntries>
