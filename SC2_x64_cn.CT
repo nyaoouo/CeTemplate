@@ -93,18 +93,32 @@ main()
         <CheatEntry>
           <ID>114071</ID>
           <Description>"CheatArray"</Description>
+          <Options moHideChildren="1"/>
           <VariableType>Auto Assembler Script</VariableType>
           <AssemblerScript>[ENABLE]
 {$lua}
 if syntaxcheck then return end
 CheatArray_hookInfo = nyce.createSimpleHook({
-  method = nyce.aobScan("40 ? ? ? 74 ? 8b ? ? 40 ? ? ? 0f ? ?", { module = "SC2_x64.exe" }),
+  method = nyce.aobScan("8b ? ? 40 ? ? ? 0f a3 ? 0f 92 ? eb", { module = "SC2_x64.exe" }),
   code= [[
 mov [${_Var_}], rax
+push rsi
+push rdi
+push rcx
+lea rsi, [${_Var_}]
+lea rdi, [rax]
+add rsi, 8
+add rdi, 8
+mov rcx, 0x20
+cld
+rep movsb
+pop rcx
+pop rdi
+pop rsi
 ]],
   vars="CheatArray",
 })
-memrec.address="[CheatArray]"
+memrec.address="CheatArray"
 {$asm}
 [DISABLE]
 {$lua}
@@ -127,7 +141,7 @@ CheatArray_hookInfo = nil
             </CheatEntry>
             <CheatEntry>
               <ID>114073</ID>
-              <Description>"FastBuild"</Description>
+              <Description>"Fast Build"</Description>
               <DropDownList DisplayValueAsItem="1">0:Disable
 2:Enable
 </DropDownList>
@@ -136,8 +150,28 @@ CheatArray_hookInfo = nil
               <Address>+C</Address>
             </CheatEntry>
             <CheatEntry>
+              <ID>114076</ID>
+              <Description>"No Sup Req"</Description>
+              <DropDownList DisplayValueAsItem="1">0:Disable
+2:Enable
+</DropDownList>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+14</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114075</ID>
+              <Description>"No Cost"</Description>
+              <DropDownList DisplayValueAsItem="1">0:Disable
+2:Enable
+</DropDownList>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>+18</Address>
+            </CheatEntry>
+            <CheatEntry>
               <ID>114074</ID>
-              <Description>"Invis"</Description>
+              <Description>"No Damage"</Description>
               <DropDownList DisplayValueAsItem="1">0:Disable
 2:Enable
 </DropDownList>
@@ -146,14 +180,14 @@ CheatArray_hookInfo = nil
               <Address>+1C</Address>
             </CheatEntry>
             <CheatEntry>
-              <ID>114075</ID>
-              <Description>"NoCost"</Description>
+              <ID>114077</ID>
+              <Description>"No Tech Req"</Description>
               <DropDownList DisplayValueAsItem="1">0:Disable
 2:Enable
 </DropDownList>
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
-              <Address>+18</Address>
+              <Address>+20</Address>
             </CheatEntry>
           </CheatEntries>
         </CheatEntry>

@@ -146,6 +146,62 @@ NoCost_hookInfos = nil
 {$asm}
 </AssemblerScript>
         </CheatEntry>
+        <CheatEntry>
+          <ID>114073</ID>
+          <Description>"BattleSaveData"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+[ENABLE]
+if not syntaxcheck then (function ()
+  memrec.ShowAsHex = true
+  memrec.Address = nyce.resolveMonoPath(mono_findClass("","BattleSaveData"), "I")
+  memrec.OffsetCount = 1
+  local mr = nyce.createMonoInstanceRecord({
+    -- fields={
+    -- },
+    parent=memrec,
+    class=mono_findClass("","BattleSaveData"),
+  })
+end)() end
+
+[DISABLE]
+if not syntaxcheck then (function()
+  while memrec.Count &gt; 0 do
+    memrec.Child[0].destroy()
+  end
+end)() end
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114136</ID>
+          <Description>"UpgradeMgr"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+[ENABLE]
+if not syntaxcheck then (function ()
+  memrec.ShowAsHex = true
+  memrec.Address = nyce.resolveMonoPath(mono_findClass("","UpgradeMgr"), "I")
+  memrec.OffsetCount = 1
+  local mr = nyce.createMonoInstanceRecord({
+    -- fields={
+    -- },
+    parent=memrec,
+    class=mono_findClass("","UpgradeMgr"),
+  })
+end)() end
+
+[DISABLE]
+if not syntaxcheck then (function()
+  while memrec.Count &gt; 0 do
+    memrec.Child[0].destroy()
+  end
+end)() end
+
+</AssemblerScript>
+        </CheatEntry>
       </CheatEntries>
     </CheatEntry>
   </CheatEntries>
