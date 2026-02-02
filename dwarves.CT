@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+MonoMethod_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","Mono","Method1"),
+  code= [[
+xor eax, eax
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(MonoMethod_hookInfo)
+MonoMethod_hookInfo = nil
+{$asm}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defAobScanModule(syntaxcheck,"AsmPatch_at", "ProcessName","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+)
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+package.loaded.ny_ce_utils = nil
+nyce = require('ny_ce_utils')
+
+local function main()
+  nyce.addCompactMenu()
+  nyce.autoAttach('dwarves.exe')
+end
+
+if syntaxcheck then return end
+main()
+
+
+[DISABLE]
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"InfGold"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+InfGold_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","MainManager","ReduceGold"),
+    code= [[
+mov eax, 1
+ret
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","MainManager","HasEnoughGold"),
+    code= [[
+mov eax, 1
+ret
+]]
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(InfGold_hookInfo[1])
+nyce.removeSimpleHook(InfGold_hookInfo[2])
+InfGold_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114075</ID>
+          <Description>"ShopArtifact"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+ShopArtifact_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","MainManager","IsArtifactEvent"),
+    code= [[
+mov eax, 1
+ret
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","MainManager","CanPickAnotherArtifact"),
+    code= [[
+mov eax, 1
+ret
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","MainManager","GetRemainingArtifactPicks"),
+    code= [[
+mov eax, 9
+ret
+]]
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(ShopArtifact_hookInfo[1])
+nyce.removeSimpleHook(ShopArtifact_hookInfo[2])
+nyce.removeSimpleHook(ShopArtifact_hookInfo[3])
+ShopArtifact_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114072</ID>
+          <Description>"NoRuneCircleCost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+NoRuneCircleCost_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","RuneCircle","BuyRuneCircleUpgrade"),
+    code= [[
+mov eax, 1
+ret
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","RuneCircle","GetRuneBuyCost"),
+    code= [[
+xor eax, eax
+ret
+]]
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(NoRuneCircleCost_hookInfo[1])
+nyce.removeSimpleHook(NoRuneCircleCost_hookInfo[2])
+NoRuneCircleCost_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114073</ID>
+          <Description>"MustVeteran"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+MustVeteran_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","MainManager","GetVeteranChance"),
+  code= [[
+push eax
+mov eax, (float)1
+movd xmm0, eax
+pop eax
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(MustVeteran_hookInfo)
+MustVeteran_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114074</ID>
+          <Description>"MaxShopRarity"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+MaxShopRarity_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","ItemHelpers","GetRarityChanceForShopTier"),
+  code= [[
+mov rdx, (int)9999
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(MaxShopRarity_hookInfo)
+MaxShopRarity_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114076</ID>
+          <Description>"AllItemAvaliable"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+AllItemAvaliable_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","ItemHelpers","GetRandomItemForShopTier"),
+  code= [[
+//mov qword ptr[rsp+28],0
+mov r9d,1
+mov edx,(int)99
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(AllItemAvaliable_hookInfo)
+AllItemAvaliable_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114077</ID>
+          <Description>"LockShop"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+LockShop_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","ButtonCreator","RollEvent"),
+  code= [[
+test edx, edx
+jnz normal
+ret
+normal:
+]],
+aa="label(normal)"
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(LockShop_hookInfo)
+LockShop_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114078</ID>
+          <Description>"NoUpgradeCost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+NoUpgradeCost_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","ForgeManager","GetMythrilCost"),
+  code= [[
+xor rax,rax
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(NoUpgradeCost_hookInfo)
+NoUpgradeCost_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114079</ID>
+          <Description>"OneExpLvUp"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+OneExpLvUp_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","Dwarf","GetExpForNextLevel"),
+  code= [[
+mov rax,1
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(OneExpLvUp_hookInfo)
+OneExpLvUp_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>

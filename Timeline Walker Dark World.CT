@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+MonoMethod_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","Mono","Method1"),
+  code= [[
+xor eax, eax
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(MonoMethod_hookInfo)
+MonoMethod_hookInfo = nil
+{$asm}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defAobScanModule(syntaxcheck,"AsmPatch_at", "ProcessName","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+)
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+package.loaded.ny_ce_utils = nil
+nyce = require('ny_ce_utils')
+
+local function main()
+  nyce.addCompactMenu()
+  nyce.autoAttach('Timeline Walker Dark World.exe')
+end
+
+if syntaxcheck then return end
+main()
+
+
+[DISABLE]
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"NoGoldCost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+NoGoldCost_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","GameDataManager","ModifyGoldAmount"),
+    aa = "label(continue)",
+    code = [[
+test edx, edx
+jge continue
+ret
+continue:
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","GameDataManager","HasEnoughGold"),
+    code = [[
+mov al, 1
+ret
+]]
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+for i = 1, #NoGoldCost_hookInfo do
+    nyce.removeSimpleHook(NoGoldCost_hookInfo[i])
+end
+NoGoldCost_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114072</ID>
+          <Description>"ShopSkillLv3"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+ShopSkillLv3_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","GachaMgrV2","AddSkillID"),
+    code= "mov r9d, 3"
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","GachaMgrV2","RandomSkillItem"),
+    code= [[
+push rbx
+mov dword ptr [r9+10+18], 0
+mov dword ptr [r9+10+1C], (int)100
+pop rbx
+]]
+  }),
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+for i = 1, #ShopSkillLv3_hookInfo do
+    nyce.removeSimpleHook(ShopSkillLv3_hookInfo[i])
+end
+ShopSkillLv3_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114073</ID>
+          <Description>"NoCrystalCost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+NoCrystalCost_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","GameDataManager","ModifyUserCrystal"),
+    aa = "label(continue)",
+    code = [[
+test edx, edx
+jge continue
+ret
+continue:
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","GameDataManager","HasEnoughCrystal"),
+    code = [[
+mov al, 1
+ret
+]]
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+for i = 1, #NoCrystalCost_hookInfo do
+    nyce.removeSimpleHook(NoCrystalCost_hookInfo[i])
+end
+NoCrystalCost_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114074</ID>
+          <Description>"InfBan"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+InfBan_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","GameDataManager","GetAllowIllustratedBanAmount"),
+  code= [[
+mov eax, (int)99
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(InfBan_hookInfo)
+InfBan_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114075</ID>
+          <Description>"GameDataManager"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+[ENABLE]
+if not syntaxcheck then (function ()
+  memrec.ShowAsHex = true
+  memrec.Address = nyce.resolveMonoPath(mono_findClass("","GameDataManager"), "instance")
+  memrec.OffsetCount = 1
+  local mr = nyce.createMonoInstanceRecord({
+    -- fields={
+    -- },
+    parent=memrec,
+    class=mono_findClass("","GameDataManager"),
+  })
+end)() end
+
+[DISABLE]
+if not syntaxcheck then (function()
+  while memrec.Count &gt; 0 do
+    memrec.Child[0].destroy()
+  end
+end)() end
+
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>
