@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+MonoMethod_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","Mono","Method1"),
+  code= [[
+xor eax, eax
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(MonoMethod_hookInfo)
+MonoMethod_hookInfo = nil
+{$asm}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defAobScanModule(syntaxcheck,"AsmPatch_at", "ProcessName","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+)
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+package.loaded.ny_ce_utils = nil
+nyce = require('ny_ce_utils')
+
+local function main()
+  nyce.addCompactMenu()
+  nyce.autoAttach('Dark Hunting Ground.exe')
+end
+
+if syntaxcheck then return end
+main()
+
+
+[DISABLE]
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"P2AResource"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+P2AResource_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","PlayerData","ChangeMoney"),
+    code = [[
+pcmpeqd xmm0, xmm0
+psrld   xmm0, 1
+andps   xmm1, xmm0
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","Package","ChangeResource"),
+    code = [[
+mov eax, r8d
+neg eax
+test r8d, r8d
+cmovs r8d, eax
+// imul r8d, r8d, (int)100
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","HuntingTargetData","ChangeBreath"),
+    code = [[
+mov eax, r8d
+neg eax
+test r8d, r8d
+cmovs r8d, eax
+// imul r8d, r8d, (int)100
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","PlayerData","ChangeAbyssStar"),
+    code = [[
+pcmpeqd xmm0, xmm0
+psrld   xmm0, 1
+andps   xmm1, xmm0
+]]
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+for i=1, #P2AResource_hookInfo do
+  nyce.removeSimpleHook(P2AResource_hookInfo[i])
+end
+P2AResource_hookInfo = nil
+{$asm}
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114072</ID>
+          <Description>"MaxQuality"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local RandomAffixTaker__GetQualityAffix = nyce.findMonoFunction("","RandomAffixTaker","GetQualityAffix")
+MaxQuality_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","RandomAffix","TryRollNum"),
+    code = [[
+mov rax, [rcx]
+jmp [rax+c8]
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","RandomAffixTaker","GetRandomAffixByHighestQuality"),
+    code = "jmp RandomAffixTaker:GetQualityAffix"
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","SupportSlate","MakeSupportSlate"),
+    code = "mov rdx, 4"
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","Badge","MakeBadge"),
+    code = "mov rdx, 4"
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","HuntingCore","MakeHuntingCore"),
+    code = "mov rdx, 4"
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","AbyssEye","MakeRandomAbyssEye"),
+    code = "mov rcx, 4"
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+for i=1, #MaxQuality_hookInfo do
+  nyce.removeSimpleHook(MaxQuality_hookInfo[i])
+end
+MaxQuality_hookInfo = nil
+{$asm}
+
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114073</ID>
+          <Description>"NoHuntingNeed"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+NoHuntingNeed_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","HuntingTargetData","GetHuntingNeed","int,int,bool"),
+    code = [[
+xor rax,rax
+ret
+]]
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(NoHuntingNeed_hookInfo[1])
+NoHuntingNeed_hookInfo = nil
+{$asm}
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114074</ID>
+          <Description>"MulExp"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+MulExp_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","PlayerData","TakeExp"),
+    code = [[
+imul rdx, [${_Var_}]
+]],
+  vars="ExpMultiplier"
+  })
+}
+writeInteger("ExpMultiplier", 1)
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(MulExp_hookInfo[1])
+MulExp_hookInfo = nil
+{$asm}
+
+
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114075</ID>
+              <Description>"ExpMultiplier"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>ExpMultiplier</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114076</ID>
+          <Description>"AllTalentCanLearn"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+AllTalentCanLearn_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","TalentTreeNode","PlayerEditEnoughPointToTree"),
+    code = [[
+mov rax,1
+ret
+]]
+  }),
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","TalentTreeNode","PreviousNodeIsMaxLevel"),
+    code = [[
+mov rax,1
+ret
+]]
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+for i=1, #AllTalentCanLearn_hookInfo do
+  nyce.removeSimpleHook(AllTalentCanLearn_hookInfo[i])
+end
+AllTalentCanLearn_hookInfo = nil
+{$asm}
+
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+  <LuaScript>
+</LuaScript>
+</CheatTable>
