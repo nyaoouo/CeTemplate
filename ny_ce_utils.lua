@@ -52,6 +52,11 @@ module.hex2bytes = function(hex)
 end
 
 module.aobScan = function(pattern, param)
+    -- pattern is a string like "48 8B ?? ?? ?? 48 85 C0"
+    -- param is a table with optional fields:
+    --   module: limit the scan to a specific module
+    --   protectionflags: limit the scan to memory with specific protection flags, e.g. "x" for executable memory
+    --   unique: if true, throw an error if more than one result is found (default true)
     local i = -1
     local param_offset = nil
     local param_size = 0
@@ -89,7 +94,11 @@ module.aobScan = function(pattern, param)
     local startScan = 0
     local endScan = 0x7FFFFFFFFFFFFFFF
     local protectionflags = param.protectionflags ~= nil or ""
-    local unique = param.unique ~= nil and param.unique or true
+    -- local unique = param.unique ~= nil and param.unique or true
+    local unique = true
+    if param.unique ~= nil then
+        unique = param.unique
+    end
     if param.module ~= nil then
         local base = getAddress(param.module)
         local size = getModuleSize(param.module)
@@ -117,17 +126,22 @@ module.aobScan = function(pattern, param)
     local foundlist = createFoundList(memscan)
     foundlist.initialize()
     -- print(("found: %d"):format(foundlist.Count))
-    local result = nil
+    -- local result = nil
+    local results = {}
     local addrs = foundlist.Address
     for i = 0, foundlist.Count - 1 do
         local res = getAddress(addrs[i])
         if read_param ~= nil then
             res = read_param(res + param_offset, true)
         end
-        if result == nil then
-            result = res
-            if not unique then break end
-        elseif result ~= res then
+        -- if result == nil then
+        --     result = res
+        --     if not unique then break end
+        -- elseif result ~= res then
+        --     error("Found more than one result")
+        -- end
+        table.insert(results, res)
+        if unique and #results > 1 then
             error("Found more than one result")
         end
     end
@@ -135,11 +149,11 @@ module.aobScan = function(pattern, param)
     foundlist.destroy()
     memscan.destroy()
 
-    if result == nil then
+    if #results == 0 then
         error("aob " .. pattern .. " not found")
+    else
+        return table.unpack(results)
     end
-
-    return result
 end
 
 module.aobScanModule = function(name, m, aob)

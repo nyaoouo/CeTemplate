@@ -186,11 +186,13 @@ MaxRecuitRank_hookInfo = nil
 {$lua}
 if syntaxcheck then return end
 local offset_ShopItemDefinition_sellerLv = nyce.resolveMonoPath(mono_findClass("","ShopItemDefinition"), "sellerLv", 0)
-local patch_at = nyce.aobScan("c3 8b ? ? 39 43 ? 48 ? ? ? ? 0f 9e", { module = "GameAssembly.dll" }) + 0x1
+local offset_ForgeDefinition_level = nyce.resolveMonoPath(mono_findClass("","ForgeDefinition"), "level", 0)
+local ShopRankPatch_at = nyce.aobScan("c3 8b ? ? 39 43 ? 48 ? ? ? ? 0f 9e", { module = "GameAssembly.dll" }) + 0x1
+local check_forge_lv_at = table.pack(nyce.aobScan(("8B 47 ? 39 43 %x 0F 9E C0"):format(offset_ForgeDefinition_level),{ module = "GameAssembly.dll", unique = false}))
 
 BestShop_hookInfo = {
-  nyce.createSimpleHook({ -- Manager_GameManager__GenerateRandomTraits
-    method = patch_at,
+  nyce.createSimpleHook({ -- Manager_GameManager___c__DisplayClass83_0___GetShopCandidates_b__0
+    method = ShopRankPatch_at,
     skip_inst = 4,
     vars="ShopRank",
     code= ([[
@@ -200,16 +202,46 @@ db %s
 sete al
 ]]):format(
   offset_ShopItemDefinition_sellerLv,
-  nyce.bytes2hex(readBytes(patch_at+6,5,true), " ")
+  nyce.bytes2hex(readBytes(ShopRankPatch_at+6,5,true), " ")
 )
+  }),
+  nyce.createSimpleHook({ -- Weapon__SetWeapon
+    method = nyce.aobScan("8b ? ? e8 ? ? ? ? 33 ? 44 ? ? 85 ? 0f 8e ? ? ? ? 66 0f 1f 84 00 ? ? ? ?", { module = "GameAssembly.dll" }) + 0x8,
+    vars="WeaponSlot",
+    code= [[
+mov eax, [${_Var_}]
+]]
+  }),
+  nyce.createSimpleHook({ -- UIWeaponTuningFuncPopup__GetForgeCost
+    method = nyce.findMonoFunction("","UIWeaponTuningFuncPopup","GetForgeCost"),
+    code= [[
+mov eax, 1
+ret
+]]
   })
 }
+
+for i=1,#check_forge_lv_at do
+  table.insert(BestShop_hookInfo,nyce.createSimpleHook({ -- UIWeaponTuningFuncPopup__GetForgeCost
+    method = check_forge_lv_at[i],
+    skip_inst = 3,
+    code= ([[
+mov eax, [ShopRank]
+cmp [rbx+%x], eax
+sete al
+]]):format(offset_ForgeDefinition_level)
+  }))
+end
+
 writeInteger("ShopRank", 3)
+writeInteger("WeaponSlot", 10)
 {$asm}
 [DISABLE]
 {$lua}
 if syntaxcheck then return end
-nyce.removeSimpleHook(BestShop_hookInfo[1])
+for i=1,#BestShop_hookInfo do
+  nyce.removeSimpleHook(BestShop_hookInfo[i])
+end
 BestShop_hookInfo = nil
 {$asm}
 </AssemblerScript>
@@ -220,6 +252,13 @@ BestShop_hookInfo = nil
               <ShowAsSigned>0</ShowAsSigned>
               <VariableType>4 Bytes</VariableType>
               <Address>ShopRank</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114123</ID>
+              <Description>"WeaponSlot"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>WeaponSlot</Address>
             </CheatEntry>
           </CheatEntries>
         </CheatEntry>
