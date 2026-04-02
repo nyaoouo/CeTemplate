@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>2</ID>
+      <Description>"mono patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+MonoMethod_hookInfo = nyce.createSimpleHook({
+  method = nyce.findMonoFunction("","Mono","Method1"),
+  code= [[
+xor eax, eax
+ret
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(MonoMethod_hookInfo)
+MonoMethod_hookInfo = nil
+{$asm}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>114070</ID>
+      <Description>"asm patch"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+return (
+  nyce.defAobScanModule(syntaxcheck,"AsmPatch_at", "ProcessName","48 ? ? ? 48 ? ? ? ? ? ? 48 ? ? ? ? ? ? 44 ? ? 0f 29 70 ? 48 ? ? 48")
+)
+{$asm}
+alloc(AsmPatch_alloc,$1000)
+label(AsmPatch_code)
+label(AsmPatch_return)
+label(AsmPatch_vals)
+label(AsmPatch_backup)
+
+AsmPatch_alloc:
+AsmPatch_vals:
+  dq (int)10
+AsmPatch_code:
+  imul edx, [AsmPatch_vals]
+AsmPatch_backup:
+  readmem(AsmPatch_at,18)
+  jmp AsmPatch_return
+
+AsmPatch_at:
+  db ff 25 00 00 00 00 // far jmp cost 14
+  dq AsmPatch_code
+  nop 4
+AsmPatch_return:
+registersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+
+[DISABLE]
+
+AsmPatch_at:
+  readmem(AsmPatch_backup,18)
+
+dealloc(AsmPatch_alloc)
+unregistersymbol(AsmPatch_at,AsmPatch_alloc,AsmPatch_backup,AsmPatch_vals)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Init"</Description>
+      <Options moHideChildren="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+[ENABLE]
+package.loaded.ny_ce_utils = nil
+nyce = require('ny_ce_utils')
+
+local function main()
+  nyce.addCompactMenu()
+  nyce.autoAttach('CQ Hero Town.exe')
+end
+
+if syntaxcheck then return end
+main()
+
+
+[DISABLE]
+
+
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>114071</ID>
+          <Description>"GameManager"</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+[ENABLE]
+if not syntaxcheck then (function ()
+  memrec.ShowAsHex = true
+  memrec.Address = nyce.resolveMonoPath(mono_findClass("Manager","GameManager"), "instance")
+  memrec.OffsetCount = 1
+  local mr = nyce.createMonoInstanceRecord({
+    fields={
+      {path="&lt;UserData&gt;k__BackingField", name="UserData"},
+    },
+    parent=memrec,
+    class=mono_findClass("Manager","GameManager"),
+  })
+end)() end
+
+[DISABLE]
+if not syntaxcheck then (function()
+  while memrec.Count &gt; 0 do
+    memrec.Child[0].destroy()
+  end
+end)() end
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114072</ID>
+          <Description>"best recuit"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+MaxRecuitRank_hookInfo = {
+  nyce.createSimpleHook({ -- Manager_GameManager__GenerateRandomTraits
+    method = nyce.aobScan("e8 ? ? ? ? 89 47 ? 48 ? ? ? ? ? ? e8 ? ? ? ? 4c ? ? ? ? ? ?", { module = "GameAssembly.dll" }),
+    skip_inst = 1,
+    vars="RecuitRank",
+    code= [[
+mov eax, [${_Var_}]
+  ]]
+  }),
+  nyce.createSimpleHook({ -- Manager_GameManager__GenerateRandomTraits
+    method = nyce.aobScan("e8 ? ? ? ? 4c ? ? ? 44 ? ? 4d ? ? 0f 84 ? ? ? ? 48 ? ? ? ? ? ? ", { module = "GameAssembly.dll" }),
+    skip_inst = 1,
+    vars="RecuitTraitCount",
+    code= [[
+mov eax, [${_Var_}]
+  ]]
+  }),
+  nyce.createBytesPatch( -- Manager_GameManager___c__DisplayClass299_0___GenerateRandomTraits_b__1
+    nyce.aobScan("7d ? 48 ? ? ? 33 ? e8 ? ? ? ? 84 ?", { module = "GameAssembly.dll" }), "75"
+  )
+}
+writeInteger("RecuitRank", 4)
+writeInteger("RecuitTraitCount", 3)
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(MaxRecuitRank_hookInfo[1])
+nyce.removeSimpleHook(MaxRecuitRank_hookInfo[2])
+nyce.restoreBytesPatch(MaxRecuitRank_hookInfo[3])
+MaxRecuitRank_hookInfo = nil
+{$asm}
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114096</ID>
+              <Description>"RecuitRank(1-5)"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>RecuitRank</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>114097</ID>
+              <Description>"RecuitTraitCount"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>RecuitTraitCount</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114098</ID>
+          <Description>"best shop"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local offset_ShopItemDefinition_sellerLv = nyce.resolveMonoPath(mono_findClass("","ShopItemDefinition"), "sellerLv", 0)
+local patch_at = nyce.aobScan("c3 8b ? ? 39 43 ? 48 ? ? ? ? 0f 9e", { module = "GameAssembly.dll" }) + 0x1
+
+BestShop_hookInfo = {
+  nyce.createSimpleHook({ -- Manager_GameManager__GenerateRandomTraits
+    method = patch_at,
+    skip_inst = 4,
+    vars="ShopRank",
+    code= ([[
+mov eax, [${_Var_}]
+cmp [rbx+%x], eax
+db %s
+sete al
+]]):format(
+  offset_ShopItemDefinition_sellerLv,
+  nyce.bytes2hex(readBytes(patch_at+6,5,true), " ")
+)
+  })
+}
+writeInteger("ShopRank", 3)
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(BestShop_hookInfo[1])
+BestShop_hookInfo = nil
+{$asm}
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>114099</ID>
+              <Description>"ShopRank(1-3)"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>ShopRank</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+  <LuaScript>
+</LuaScript>
+</CheatTable>

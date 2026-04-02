@@ -296,10 +296,36 @@ AllTalentCanLearn_hookInfo = nil
 
 </AssemblerScript>
         </CheatEntry>
+        <CheatEntry>
+          <ID>114077</ID>
+          <Description>"HollowPowerNoCost"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+HollowPowerNoCost_hookInfo = {
+  nyce.createSimpleHook({
+    method = nyce.findMonoFunction("","HollowPower","GetSpCost"),
+    code = [[
+xor rax, rax
+ret
+]]
+  })
+}
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+for i=1, #HollowPowerNoCost_hookInfo do
+  nyce.removeSimpleHook(HollowPowerNoCost_hookInfo[i])
+end
+HollowPowerNoCost_hookInfo = nil
+{$asm}
+
+</AssemblerScript>
+        </CheatEntry>
       </CheatEntries>
     </CheatEntry>
   </CheatEntries>
   <UserdefinedSymbols/>
-  <LuaScript>
-</LuaScript>
 </CheatTable>

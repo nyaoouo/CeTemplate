@@ -17,6 +17,40 @@ module.tostring = function(o)
     return res
 end
 
+module.bytes2hex = function(bytes, split)
+    local res = ""
+    split = split or ""
+    for i = 1, #bytes do
+        if bytes[i] == nil then
+            res = res .. "??"
+        else
+            res = res .. string.format("%02X", bytes[i])
+        end
+        if i < #bytes then
+            res = res .. split
+        end
+    end
+    return res
+end
+
+module.hex2bytes = function(hex)
+    local res = {}
+    local i = 1
+    while i <= #hex do
+        local byte_str = hex:sub(i, i + 1)
+        if byte_str == "??" then
+            res[#res + 1] = nil
+        else
+            res[#res + 1] = tonumber(byte_str, 16)
+        end
+        i = i + 2
+        if hex:sub(i, i) == ' ' then
+            i = i + 1
+        end
+    end
+    return res
+end
+
 module.aobScan = function(pattern, param)
     local i = -1
     local param_offset = nil
@@ -388,12 +422,42 @@ local function get_unique_prefix()
     return ("_unique_%d"):format(unique_id)
 end
 
+module.createBytesPatch = function(address, bytes)
+    -- create a bytes patch at address with the given bytes, and return a function to restore the original bytes
+    local patch_bytes = {}
+    if type(bytes) == "string" then
+        patch_bytes = module.hex2bytes(bytes)
+    elseif type(bytes) == "table" then
+        patch_bytes = bytes
+    else
+        error("Invalid bytes format")
+    end
+    
+    local original_bytes = readBytes(address, #patch_bytes, true)
+    for i = 1, #patch_bytes do
+        if patch_bytes[i] == nil then
+            patch_bytes[i] = original_bytes[i]
+        end
+    end
+    writeBytes(address, patch_bytes)
+    return {
+        address = address,
+        original_bytes = original_bytes,
+        patch_bytes = patch_bytes,
+    }
+end
+
+module.restoreBytesPatch = function(info)
+    writeBytes(info.address, info.original_bytes)
+end
+
 module.createSimpleHook = function(params)
     -- params = {
     --   method: number
     --   code: string (user_code)
     --   vars?: string
     --   aa?: string (auto assemble code)
+    --   skip_inst?: number (number of inst to skip, default 0, can be used when you want to keep some of the original instructions and execute them in user_code)
     -- }
     local method_at = params.method
     local allocate_at = allocateMemory(1024, method_at)
@@ -403,9 +467,26 @@ module.createSimpleHook = function(params)
     end
     local bytes_to_take = 0
     local d = createDisassembler()
-    while bytes_to_take < jmp_size do
+    local skip_inst = params.skip_inst or 0
+    local skipbytes = 0
+    -- while bytes_to_take < jmp_size do
+    --     d.disassemble(method_at + bytes_to_take)
+    --     bytes_to_take = bytes_to_take + #d.LastDisassembleData.bytes
+    -- end
+    while skip_inst > 0 or bytes_to_take < jmp_size do
         d.disassemble(method_at + bytes_to_take)
-        bytes_to_take = bytes_to_take + #d.LastDisassembleData.bytes
+        if d.LastDisassembleData == nil or d.LastDisassembleData.bytes == nil then
+            error(("Failed to disassemble instruction at %x"):format(method_at + bytes_to_take))
+        end
+        local inst_size = #d.LastDisassembleData.bytes
+        if inst_size == 0 then
+            error(("Failed to disassemble instruction at %x"):format(method_at + bytes_to_take))
+        end
+        bytes_to_take = bytes_to_take + inst_size
+        if skip_inst > 0 then
+            skip_inst = skip_inst - 1
+            skipbytes = skipbytes + inst_size
+        end
     end
     d.destroy()
     local prefix = get_unique_prefix()
@@ -421,9 +502,10 @@ ${user_autoassemble}
 _Alloc_:
 _Code_:
 ${user_code}
+${code_exec_orig}
+jmp _RETURN_
 ${prefix}_Backup_:
 readmem(_MethodAt_,${bytes_to_take})
-jmp _RETURN_
 ${prefix}_Var_:
 _MethodAt_:
 jmp _Code_
@@ -437,6 +519,7 @@ registerSymbol(${prefix}_Backup_,${prefix}_Var_)
             _ORIG_ = prefix .. "_Backup_",
             _Var_ = prefix .. "_Var_",
         }),
+        code_exec_orig = bytes_to_take - skipbytes > 0 and ("readmem(%s, %d)"):format(("%x"):format(method_at + skipbytes), bytes_to_take - skipbytes) or "",
         bytes_to_take = ("%d"):format(bytes_to_take),
         nop_count = ("%d"):format(bytes_to_take - jmp_size),
         prefix = prefix,
