@@ -118,6 +118,7 @@ if not syntaxcheck then (function()
 end)() end
 
 </AssemblerScript>
+          <CheatEntries/>
         </CheatEntry>
         <CheatEntry>
           <ID>114072</ID>
@@ -262,10 +263,61 @@ BestShop_hookInfo = nil
             </CheatEntry>
           </CheatEntries>
         </CheatEntry>
+        <CheatEntry>
+          <ID>114124</ID>
+          <Description>"instant_research"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+InstantResearch_hookInfo = nyce.createSimpleHook({ -- InstituteLogics__StartResearchTimer_d__25__MoveNext
+  method = nyce.aobScan("f3 ? ? ? ? f3 ? ? ? f3 0f 11 46 ? 33 ?", { module = "GameAssembly.dll" }),
+  skip_inst = 2,
+  code= [[
+push eax
+mov eax, (float)0
+movd xmm0, eax
+pop eax
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(InstantResearch_hookInfo)
+InstantResearch_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>114125</ID>
+          <Description>"instant_build"</Description>
+          <Options moHideChildren="1"/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+InstantBuild_hookInfo = nyce.createSimpleHook({ -- InstituteLogics__StartResearchTimer_d__25__MoveNext
+  method = nyce.aobScan("f3 ? ? ? 0f ? ? ? ? f3 0f 11 bb ? ? ? ?", { module = "GameAssembly.dll" })+4,
+  code= [[
+push eax
+mov eax, (float)0
+movd xmm7, eax
+pop eax
+]]
+})
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+nyce.removeSimpleHook(InstantBuild_hookInfo)
+InstantBuild_hookInfo = nil
+{$asm}
+</AssemblerScript>
+        </CheatEntry>
       </CheatEntries>
     </CheatEntry>
   </CheatEntries>
   <UserdefinedSymbols/>
-  <LuaScript>
-</LuaScript>
 </CheatTable>
