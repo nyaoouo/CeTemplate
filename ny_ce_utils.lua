@@ -57,6 +57,7 @@ module.aobScan = function(pattern, param)
     --   module: limit the scan to a specific module
     --   protectionflags: limit the scan to memory with specific protection flags, e.g. "x" for executable memory
     --   unique: if true, throw an error if more than one result is found (default true)
+    --   offset_val
     local i = -1
     local param_offset = nil
     local param_size = 0
@@ -72,6 +73,7 @@ module.aobScan = function(pattern, param)
         end
     end
     local read_param = nil
+    local offset_val = param and param.offset_val or false
     if param_offset ~= nil then
         if param_size == 1 then
             read_param = function(ea, signed)
@@ -79,12 +81,29 @@ module.aobScan = function(pattern, param)
                 if signed and val > 127 then
                     val = val - 256
                 end
+                if offset_val then
+                    val = ea + 1 + val
+                end
                 return val
             end
         elseif param_size == 2 then
-            read_param = readSmallInteger
+            -- read_param = readSmallInteger
+            read_param = function(ea, signed)
+                local val = readSmallInteger(ea, signed)
+                if offset_val then
+                    val = ea + 2 + val
+                end
+                return val
+            end
         elseif param_size == 4 then
-            read_param = readInteger
+            -- read_param = readInteger
+            read_param = function(ea, signed)
+                local val = readInteger(ea, signed)
+                if offset_val then
+                    val = ea + 4 + val
+                end
+                return val
+            end
         else
             error(("Unknown param size %d"):format(param_size))
         end

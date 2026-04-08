@@ -118,7 +118,6 @@ if not syntaxcheck then (function()
 end)() end
 
 </AssemblerScript>
-          <CheatEntries/>
         </CheatEntry>
         <CheatEntry>
           <ID>114072</ID>
@@ -188,7 +187,7 @@ MaxRecuitRank_hookInfo = nil
 if syntaxcheck then return end
 local offset_ShopItemDefinition_sellerLv = nyce.resolveMonoPath(mono_findClass("","ShopItemDefinition"), "sellerLv", 0)
 local offset_ForgeDefinition_level = nyce.resolveMonoPath(mono_findClass("","ForgeDefinition"), "level", 0)
-local ShopRankPatch_at = nyce.aobScan("c3 8b ? ? 39 43 ? 48 ? ? ? ? 0f 9e", { module = "GameAssembly.dll" }) + 0x1
+local ShopRankPatch_at = nyce.aobScan("48 ? ? ? 45 ? ? 48 ? ? ? e8 ? ? ? ? 84 ? 75 * 48 ? ? ? ? 48 ? ? ?", { module = "GameAssembly.dll", offset_val = true })
 local check_forge_lv_at = table.pack(nyce.aobScan(("8B 47 ? 39 43 %x 0F 9E C0"):format(offset_ForgeDefinition_level),{ module = "GameAssembly.dll", unique = false}))
 
 BestShop_hookInfo = {
@@ -207,7 +206,7 @@ sete al
 )
   }),
   nyce.createSimpleHook({ -- Weapon__SetWeapon
-    method = nyce.aobScan("8b ? ? e8 ? ? ? ? 33 ? 44 ? ? 85 ? 0f 8e ? ? ? ? 66 0f 1f 84 00 ? ? ? ?", { module = "GameAssembly.dll" }) + 0x8,
+    method = nyce.aobScan("8b ? ? e8 ? ? ? ? 33 ? 44 ? ? 85 ? 0f 8e ? ? ? ? 0f 1f 80 ? ? ? ?", { module = "GameAssembly.dll" }) + 0x8,
     vars="WeaponSlot",
     code= [[
 mov eax, [${_Var_}]
