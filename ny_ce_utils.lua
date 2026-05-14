@@ -204,11 +204,12 @@ module.findMonoFunction = function(namespace, cls, method, sign)
     for i = 1, #methods do
         if methods[i].name == method then
             if sign == nil or mono_method_getSignature(methods[i].method) == sign then
+                -- mono_getJitInfo(func_start).code_size can be used to get the size of the method
                 return mono_compile_method(methods[i].method)
             end
         end
     end
-    error(("cannot find method %s:%s:%s with sign "):format(namespace, cls, method, sign))
+    error(("cannot find method %s:%s:%s with sign %s"):format(namespace, cls, method, sign))
 end
 
 module.defMonoFunction = function(issyntaxcheck, vname, namespace, cls, method, sign)
